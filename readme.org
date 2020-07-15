@@ -1,0 +1,3 @@
+* Java utilities for happy developing!
+
+"I want it, I got it", as Ariana Grande sings. This project aims to give that kind of vibe for developing in Java.
