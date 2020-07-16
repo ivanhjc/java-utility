@@ -3,6 +3,7 @@ package net.ivanhjc.utility.net;
 import com.google.common.net.UrlEscapers;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -36,6 +37,7 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tomcat.util.http.fileupload.disk.DiskFileItem;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -47,6 +49,8 @@ import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
@@ -54,17 +58,17 @@ import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.*;
 
-public class HttpClientHelper {
+public class HttpUtils {
     
     private Logger logger = LogManager.getLogger(this.getClass());
 
     private final int TIMEOUT = 1000 * 15;
     private final int RETRIES = 0;
     private CloseableHttpClient httpClient;
-    private static HttpClientHelper instance = new HttpClientHelper();
-    private static HttpClientHelper certInstance = null;
+    private static HttpUtils instance = new HttpUtils();
+    private static HttpUtils certInstance = null;
 
-    private HttpClientHelper() {
+    private HttpUtils() {
         httpClient = generatorHttpClient();
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (httpClient != null)
@@ -76,7 +80,7 @@ public class HttpClientHelper {
         }));
     }
 
-    private HttpClientHelper(KeyStore keyStore, String mchId) throws Exception {
+    private HttpUtils(KeyStore keyStore, String mchId) throws Exception {
         httpClient = generatorHttpClient(keyStore, mchId);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (httpClient != null) {
@@ -186,12 +190,12 @@ public class HttpClientHelper {
         }
     }
 
-    public static HttpClientHelper getInstance() {
+    public static HttpUtils getInstance() {
         return instance;
     }
 
-    public static HttpClientHelper getCertInstance(KeyStore keyStore, String mchId) throws Exception {
-        certInstance = new HttpClientHelper(keyStore, mchId);
+    public static HttpUtils getCertInstance(KeyStore keyStore, String mchId) throws Exception {
+        certInstance = new HttpUtils(keyStore, mchId);
         return certInstance;
     }
 
@@ -513,5 +517,28 @@ public class HttpClientHelper {
             url2 = URLDecoder.decode(url2, "UTF-8");
         }
         return url2;
+    }
+
+    public static void downloadViaMultipart(String url, String saveDir) {
+        long t1 = System.currentTimeMillis();
+        try (InputStream in = new URL(url).openConnection().getInputStream()) {
+            long t2 = System.currentTimeMillis();
+            System.out.println("uploadWX openStream time: " + ((t2 - t1) / 1e3) + "s");
+            Path fileItemPath = Paths.get(System.getProperty("java.io.tmpdir")).resolve("tmpt.jpg");
+            DiskFileItem fileItem = new DiskFileItem("file", "image", false, fileItemPath.getFileName().toString(), (int) 1e6, fileItemPath.getParent().toFile());
+            try (OutputStream out = fileItem.getOutputStream()) {
+                IOUtils.copy(in, out);
+            }
+            long t3 = System.currentTimeMillis();
+            System.out.println("uploadWX copy time: " + ((t3 - t2) / 1e3) + "s");
+
+            /*CommonsMultipartFile multipartFile = new CommonsMultipartFile(fileItem);
+            multipartFile.transferTo(new File(saveDir));*/
+
+            System.out.println("uploadWX total time: " + ((System.currentTimeMillis() - t1) / 1e3) + "s");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
