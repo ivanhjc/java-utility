@@ -5,9 +5,7 @@ import com.sun.codemodel.JCodeModel;
 import net.ivanhjc.utility.auto.enums.ColumnsOption;
 import net.ivanhjc.utility.auto.enums.CreateType;
 import net.ivanhjc.utility.auto.enums.SnippetType;
-import net.ivanhjc.utility.data.MapUtils;
 import net.ivanhjc.utility.data.StringUtils;
-import net.ivanhjc.utility.data.model.ObjectCountModel;
 import net.ivanhjc.utility.file.POIUtils;
 import org.jsonschema2pojo.*;
 import org.jsonschema2pojo.rules.RuleFactory;
@@ -202,7 +200,6 @@ public class CoderTest {
     @Test
     public void snippetGetInstance() {
 //        System.out.println(Coder.snippetGetInstance(User.class, "bean"));
-        ObjectCountModel objectCountModel;
     }
 
     @Test

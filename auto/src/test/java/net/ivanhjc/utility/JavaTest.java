@@ -3,9 +3,12 @@ package net.ivanhjc.utility;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
 import com.google.common.hash.Hashing;
+import com.google.gson.GsonBuilder;
+import net.ivanhjc.utility.data.MapUtils;
 import net.ivanhjc.utility.model.bean.Person;
 import net.ivanhjc.utility.model.enums.RespCode;
 import net.ivanhjc.utility.model.enums.Season;
+import org.apache.commons.math3.util.MathUtils;
 import org.junit.Test;
 
 import java.math.BigDecimal;
@@ -165,5 +168,18 @@ public class JavaTest {
         /*List<Integer> list = Arrays.asList(1, 2, 3, 4);
         list = list.stream().filter(n -> n > 2).collect(Collectors.toList());
         System.out.println(list);*/
+        System.out.println(new GsonBuilder().serializeNulls().create().toJson(MapUtils.createMap("a", null, null, null, null, 3)));
+    }
+
+    @Test
+    public void fooLoopTest() {
+        for (int i = 0; i < getAbs(10); i++) {
+            System.out.println(i);
+        }
+    }
+
+    private int getAbs(int n) {
+        System.out.println(n);
+        return Math.abs(n);
     }
 }

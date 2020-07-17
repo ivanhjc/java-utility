@@ -1,14 +1,158 @@
 package net.ivanhjc.utility.data;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Ivan Huang on 2017/6/27
  */
 public class NumberUtils {
+
+    /**
+     * Factorial - a recursive approach
+     *
+     * @param n A non-negative integer
+     * @return the factorial of n
+     */
+    public static int factorial(int n) {
+        if (n == 1 || n == 0)
+            return 1;
+        return factorial(n - 1) * n;
+    }
+
+    /**
+     * Factorial - a loop approach
+     *
+     * @param n A non-negative integer
+     * @return the factorial of n
+     */
+    public static int factorialLoop(int n) {
+        int result = 1;
+        for (int i = 1; i <= n; i++) {
+            result *= i;
+        }
+        return result;
+    }
+
+    /**
+     * Returns the greatest common divisor of two integers
+     *
+     * @see org.apache.commons.math3.util.ArithmeticUtils#gcd(int, int)
+     * @see java.math.BigInteger#gcd(BigInteger)
+     */
+    public static int gcd(int a, int b) {
+        if (b == 0)
+            return Math.abs(a);
+        return gcd(b, a % b);
+    }
+
+    /**
+     * Checks if a number is in the range specified by the given range string. A range is formatted using the standard mathematical notation,
+     * such as [0, 10) or (-1, 9). To represent infinity, use "INF", such as (INF, 0) or (0, INF).
+     *
+     * @param range the range string
+     * @param n     the number to check
+     * @return true if the number is in the range, false otherwise.
+     */
+    public static boolean inRange(String range, double n) {
+        char leftBracket = range.charAt(0);
+        if (leftBracket != '[' && leftBracket != '(')
+            throw new IllegalArgumentException("The argument \"range\" is not formatted correctly. " +
+                    "A range is formatted using the standard mathematical notation, such as [0, 10) or (-1, 9).");
+
+        char rightBracket = range.charAt(range.length() - 1);
+        int idx = range.indexOf(',');
+        String minStr = range.substring(1, idx);
+        String maxStr = range.substring(idx + 1, range.length() - 1).trim();
+        double min = minStr.equals("INF") ? Double.NEGATIVE_INFINITY : Double.valueOf(minStr);
+        double max = maxStr.equals("INF") ? Double.POSITIVE_INFINITY : Double.valueOf(maxStr);
+
+        return (leftBracket == '[' ? n >= min : n > min) && (rightBracket == ']' ? n <= max : n < max);
+    }
+
+    /**
+     * Checks if a number is in the range specified by the given range string, beyond the lower limit of the range, or beyond the upper limit of the range.
+     * A range is formatted using the standard mathematical notation, such as [0, 10) or (-1, 9).
+     *
+     * @param range the range string
+     * @param n     the number to check
+     * @return in the range -> 0 <br>
+     * beyond the lower limit -> -1 <br>
+     * beyond the upper limit -> 1.
+     * @see #inRange(String, double)
+     */
+    public static int compareToRange(String range, double n) {
+        char leftBracket = range.charAt(0);
+        if (leftBracket != '[' && leftBracket != '(')
+            throw new IllegalArgumentException("The argument \"range\" is not formatted correctly. " +
+                    "A range is formatted using the standard mathematical notation, such as [0, 10) or (-1, 9)");
+
+        char rightBracket = range.charAt(range.length() - 1);
+        int idx = range.indexOf(',');
+        String minStr = range.substring(1, idx);
+        String maxStr = range.substring(idx + 1, range.length() - 1).trim();
+        double min = minStr.equals("INF") ? Double.NEGATIVE_INFINITY : Double.valueOf(minStr);
+        double max = maxStr.equals("INF") ? Double.POSITIVE_INFINITY : Double.valueOf(maxStr);
+
+        boolean inLeft = leftBracket == '[' ? n >= min : n > min;
+        boolean inRight = rightBracket == ']' ? n <= max : n < max;
+        return !inLeft ? -1 : !inRight ? 1 : 0;
+    }
+
+    /**
+     * Giving an array of ranges in ascending order, returns the range which contains the target number.
+     *
+     * @param ranges the array of ranges
+     * @param target the target number to check
+     * @return the range string
+     * @see #inRange(String, double)
+     * @see #compareToRange(String, double)
+     */
+    public static String getRange(String[] ranges, double target) {
+        int i = 0, j = ranges.length - 1;
+        while (i <= j) {
+            int mid = (i + j) / 2;
+            if (inRange(ranges[mid], target)) {
+                return ranges[mid];
+            } else if (compareToRange(ranges[mid], target) > 0) {
+                i = mid + 1;
+            } else {
+                j = mid - 1;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Gets the counts of numbers that fall into each range specified in ranges.
+     *
+     * @param ranges  the array of ranges to check
+     * @param numbers the numbers to count
+     * @return the count of each range
+     * @see #inRange(String, double)
+     */
+    public static Map<String, Integer> getHistogramOfRanges(String[] ranges, double... numbers) {
+        Map<String, Integer> hist = new LinkedHashMap<>();
+        for (String range : ranges) {
+            hist.put(range, 0);
+        }
+        for (double n : numbers) {
+            String range = getRange(ranges, n);
+            if (range == null)
+                range = "Not in any range";
+            Integer count = hist.get(range);
+            if (count == null)
+                count = 0;
+            hist.put(range, count + 1);
+        }
+        return hist;
+    }
+
     /**
      * Get a case study of the unary bitwise complement operator <b>~</b>
      *
@@ -97,8 +241,8 @@ public class NumberUtils {
      * @param precision the number of digits after decimal points to preserve
      * @param trimZeros true if throwing away trailing zeros, false otherwise
      * @return {@code (100.00800, 2, true) -> "100.01"} <br>
-     *         {@code (100.00400, 2, true) -> "100"} <br>
-     *         {@code (100.00800, 4, false) -> "100.0080"} <br>
+     * {@code (100.00400, 2, true) -> "100"} <br>
+     * {@code (100.00800, 4, false) -> "100.0080"} <br>
      */
     public static String formatDecimal(BigDecimal n, int precision, boolean trimZeros) {
         if (trimZeros) {

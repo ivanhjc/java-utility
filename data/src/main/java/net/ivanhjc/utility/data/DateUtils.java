@@ -19,7 +19,7 @@ import java.util.Locale;
  *
  * @author Ivan Huang on 2018/1/3
  */
-public class DateUtils {
+public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
 
     public static final SimpleDateFormat DATE_FORMAT_ONLY_TIME = new SimpleDateFormat("HH:mm:ss");
     public static final SimpleDateFormat DATE_FORMAT_01 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

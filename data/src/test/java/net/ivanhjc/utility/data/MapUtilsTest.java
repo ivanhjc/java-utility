@@ -44,4 +44,27 @@ public class MapUtilsTest {
         user.setRealName("John");
         System.out.println(MapUtils.toMapFromBean(user));
     }
+
+    @Test
+    public void selectByChance() {
+        Map<String, Double> map = new HashMap<>();
+        map.put("Ivan", 0.7);
+        map.put("John", 0.01);
+        map.put("Alex", 0.2);
+        map.put("Mark", 0.1);
+
+        Map<Object, Integer> histogram = new HashMap<>();
+        map.forEach((k, v)-> histogram.put(k, 0));
+        histogram.put(null, 0);
+        for (int i = 0; i < 1000; i++) {
+            String win = MapUtils.selectByChance(map);
+            histogram.put(win, histogram.get(win) + 1);
+        }
+        System.out.println(MapUtils.getTable(histogram, "Item", "Times"));
+    }
+
+    @Test
+    public void containsAll() {
+        System.out.println(MapUtils.containsAll(MapUtils.createMap("a", null, "b", 0, "c", null), "b,c"));
+    }
 }
