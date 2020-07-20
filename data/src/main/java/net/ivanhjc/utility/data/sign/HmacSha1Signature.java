@@ -1,8 +1,4 @@
-/**
- * @Copyright (C) 2015 by ywx.co.,ltd.All Rights Reserved.
- *  YWX CONFIDENTIAL AND TRADE SECRET
- */
-package net.ivanhjc.metanote.common.utils.sign;
+package net.ivanhjc.utility.data.sign;
 
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;

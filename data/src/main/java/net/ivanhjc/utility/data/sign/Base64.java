@@ -1,11 +1,4 @@
-/**
- * @Title:  Base64.java
- * @Copyright (C) 2014-2015 by ywx.co.,ltd.All Rights Reserved.
- *  YWX CONFIDENTIAL AND TRADE SECRET
- * @author:  
- * @data:    
- */
-package net.ivanhjc.metanote.common.utils.sign;
+package net.ivanhjc.utility.data.sign;
 
 public class Base64 {
 	private static char[] alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=".toCharArray();

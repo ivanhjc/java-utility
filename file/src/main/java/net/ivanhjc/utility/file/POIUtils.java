@@ -2,7 +2,8 @@ package net.ivanhjc.utility.file;
 
 import net.ivanhjc.utility.data.DateUtils;
 import net.ivanhjc.utility.data.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.poi.poifs.crypt.Decryptor;
 import org.apache.poi.poifs.crypt.EncryptionInfo;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
@@ -10,17 +11,16 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.security.GeneralSecurityException;
-import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.Date;
 
 // TODO: 2017/3/15 Add new fields to existing field table and automatically put these fields to their corresponding locations in the exported sheet
 
@@ -33,7 +33,7 @@ import java.util.Date;
  */
 public class POIUtils {
 
-    private final Logger LOG = LoggerFactory.getLogger(this.getClass());
+    private static final Logger LOG = LogManager.getLogger();
 
     private static final String FIELD_DELIMITER = ".";
     private static final String DEFAULT_PROPERTY_DELIMITER = ".";

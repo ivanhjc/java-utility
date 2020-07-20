@@ -1,4 +1,4 @@
-package net.ivanhjc.metanote.common.utils.sign;
+package net.ivanhjc.utility.data.sign;
 
 import java.io.File;
 import java.io.FileOutputStream;

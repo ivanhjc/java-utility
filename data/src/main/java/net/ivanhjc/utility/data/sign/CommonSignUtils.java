@@ -1,17 +1,15 @@
-package net.ivanhjc.metanote.common.utils.sign;
-
+package net.ivanhjc.utility.data.sign;
 
 import com.google.gson.Gson;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.*;
 
 public class CommonSignUtils {
-    private static final Logger log = LoggerFactory.getLogger(CommonSignUtils.class);
-
+    private static final Logger log = LogManager.getLogger(CommonSignUtils.class);
     private static final String CHARSET = "utf-8";
     public static final String key = "jiabai201708";
 

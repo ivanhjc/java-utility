@@ -1,16 +1,14 @@
 package net.ivanhjc.utility.file;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import java.util.Properties;
 
 /**
  * @author Ivan Huang on 2019/2/14 16:28.
  */
 public class PropertyLoader {
-
-    private final static Logger logger = LoggerFactory.getLogger(PropertyLoader.class);
+    private static final Logger logger = LogManager.getLogger(POIUtils.class);
 
     /**
      * Loads properties from a file
