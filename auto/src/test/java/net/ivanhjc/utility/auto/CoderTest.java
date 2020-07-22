@@ -35,7 +35,7 @@ public class CoderTest {
     private Coder coder;
 
     public CoderTest() throws SQLException, ClassNotFoundException {
-        coder = new Coder("coder-hail.properties");
+        coder = new Coder("coder-tslease.properties");
         coder.CONFIG.dropPrefix(true)
                 .overwrite(true)
                 .mapUnderscoreToCamelCase(false)
@@ -188,8 +188,8 @@ public class CoderTest {
 
     @Test
     public void createEnums() throws Exception {
-        coder.init("t_order_prices_rel");
-        coder.createEnums("rel_type");
+        coder.init("t_easy_activity");
+        coder.createEnums("scene_type");
     }
 
     @Test

@@ -2,6 +2,7 @@ package net.ivanhjc.utility.data;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.apache.commons.collections.CollectionUtils;
 
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
@@ -160,5 +161,37 @@ public class MapUtils extends org.apache.commons.collections.MapUtils {
     public static <K, V> boolean containsAll(Map<K, V> map, String keys) {
         new ArrayList<>(map.keySet()).forEach(k -> map.remove(k, null));
         return map.keySet().containsAll(Arrays.asList(keys.split(",")));
+    }
+
+    /**
+     * Extract all entries containing the keys specified into a new map.
+     *
+     * @param map the map to extract from
+     * @param keys the keys to extract by
+     */
+    public static <K, V> Map<K, V> extract(Map<K, V> map, K[] keys) {
+        Map<K, V> newMap = new HashMap<>();
+        if (map == null || map.size() == 0)
+            return newMap;
+
+        for (K key : keys) {
+            newMap.put(key, map.get(key));
+        }
+        return newMap;
+    }
+
+    /**
+     * Extract all entries containing the keys specified into a new map.
+     *
+     * @param list the list of maps to extract from
+     * @param keys the keys to extract by
+     */
+    public static <K, V> List<Map<K, V>> extract(List<Map<K, V>> list, K[] keys) {
+        List<Map<K, V>> newList = new ArrayList<>();
+        if (CollectionUtils.isEmpty(list))
+            return newList;
+
+        list.forEach(map -> newList.add(extract(map, keys)));
+        return newList;
     }
 }

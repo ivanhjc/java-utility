@@ -173,13 +173,17 @@ public class JavaTest {
 
     @Test
     public void fooLoopTest() {
-        for (int i = 0; i < getAbs(10); i++) {
+//        for (int i = 0; i < getAbs(10); i++) {
+//            System.out.println(i);
+//        }
+        int[] n = {1, 2, 3, 4};
+        for (int i : getAbs(n)) {
             System.out.println(i);
         }
     }
 
-    private int getAbs(int n) {
+    private int[] getAbs(int[] n) {
         System.out.println(n);
-        return Math.abs(n);
+        return n;
     }
 }

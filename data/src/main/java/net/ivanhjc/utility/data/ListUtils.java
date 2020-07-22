@@ -280,7 +280,7 @@ public class ListUtils {
 
     /**
      * Check if a string is an element of a string representation of a comma-separated array <br>
-     * ("a", "a,b,c,d") -> true
+     * ("a,b,c,d", "a") -> true
      *
      * @param array formatted like "a,b,c,d"
      * @param item  the element to check, if it's null or empty, return false
