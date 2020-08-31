@@ -11,7 +11,7 @@ public class BeanUtils extends org.apache.commons.beanutils.BeanUtils {
      *                      properties are simply a comma-separated list. For nested object types the form "person[age,name]" is used. For example,
      *                      "id,name,type,Monitor[id,name,age]" may be the fields for checking for a SchoolClass object. Fields not present in the object
      *                      are deemed null as well.
-     * @param obj
+     * @param obj           the target object
      */
     public static StringBuilder getNullProperties(String fieldsToCheck, Object obj) {
         if (StringUtils.isBlank(fieldsToCheck)) {
@@ -31,7 +31,7 @@ public class BeanUtils extends org.apache.commons.beanutils.BeanUtils {
                 field.setAccessible(true);
                 value = field.get(obj);
             } catch (NoSuchFieldException | IllegalAccessException e) {
-                builder.append(fieldName).append(",");
+                builder.append(fieldName).append(", ");
                 continue;
             }
 
@@ -46,6 +46,9 @@ public class BeanUtils extends org.apache.commons.beanutils.BeanUtils {
             }
         }
 
+        if (builder.length() > 0) {
+            builder.delete(builder.lastIndexOf(","), builder.length());
+        }
         return builder;
     }
 }

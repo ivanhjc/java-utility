@@ -12,7 +12,7 @@ public class BeanUtilsTest {
     @Test
     public void getNullProperties() throws Exception {
         Object sample = Coder.sample(User.class);
-        StringBuilder result = BeanUtils.getNullProperties("test,tid,adjustOrder[name,orderId]", sample);
+        StringBuilder result = BeanUtils.getNullProperties("name,age,test", sample);
         System.out.println(result);
     }
 
