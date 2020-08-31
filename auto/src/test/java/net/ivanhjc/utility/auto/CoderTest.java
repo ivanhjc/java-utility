@@ -1,14 +1,13 @@
 package net.ivanhjc.utility.auto;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.GsonBuilder;
 import com.sun.codemodel.JCodeModel;
 import net.ivanhjc.utility.auto.enums.ColumnsOption;
 import net.ivanhjc.utility.auto.enums.CreateType;
 import net.ivanhjc.utility.auto.enums.SnippetType;
 import net.ivanhjc.utility.data.StringUtils;
 import net.ivanhjc.utility.file.POIUtils;
-import net.ivanhjc.utility.net.HttpUtils;
+import net.ivanhjc.utility.model.User;
 import org.jsonschema2pojo.*;
 import org.jsonschema2pojo.rules.RuleFactory;
 import org.junit.Test;
@@ -213,9 +212,9 @@ public class CoderTest {
     public void sample() throws Exception {
 //        System.out.println(Coder.sample(String.class));
 //        System.out.println(Coder.sample(Integer.class));
-//        System.out.println(StringUtils.GSON_NULL.toJson(Coder.sample(User.class)));
+        System.out.println(StringUtils.GSON_NULL.toJson(Coder.sample(User.class)));
+//
 //        System.out.println(StringUtils.GSON_NULL.toJson(Coder.sample(Car.class)));
-        System.out.println(new GsonBuilder().serializeNulls().setDateFormat("yyyy-MM-dd HH:mm:ss").create().toJson(Coder.sample("/home/ivanhjc/Projects/car-hailing/car-hailing-model/target/classes/", "com.winsky.carhailing.model.bo.common.DriverRatingConfig")));
 //        System.out.println(StringUtils.GSON_NULL.toJson(Coder.sample(User[].class)));
 //        System.out.println(StringUtils.GSON_NULL.toJson(Coder.sample(int[].class)));
 //        System.out.println(StringUtils.GSON_NULL.toJson(Coder.sample(Map.class)));

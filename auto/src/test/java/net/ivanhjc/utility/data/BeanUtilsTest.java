@@ -2,6 +2,7 @@ package net.ivanhjc.utility.data;
 
 import com.google.gson.*;
 import net.ivanhjc.utility.auto.Coder;
+import net.ivanhjc.utility.model.User;
 import org.junit.Test;
 
 import java.util.Date;
@@ -10,7 +11,7 @@ public class BeanUtilsTest {
 
     @Test
     public void getNullProperties() throws Exception {
-        Object sample = Coder.sample("/home/ivanhjc/Projects/customer-service-system/customer-service-system-common/target/classes", "com.winsky.lease.css.common.model.vo.TicketCsrFollowupSaveRequest");
+        Object sample = Coder.sample(User.class);
         StringBuilder result = BeanUtils.getNullProperties("test,tid,adjustOrder[name,orderId]", sample);
         System.out.println(result);
     }

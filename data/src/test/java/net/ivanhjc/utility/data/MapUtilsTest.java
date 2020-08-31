@@ -1,11 +1,12 @@
 package net.ivanhjc.utility.data;
 
 import com.google.gson.GsonBuilder;
-import net.ivanhjc.utility.data.model.User;
+import net.ivanhjc.utility.model.User;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Test;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Ivan Huang on 2018/4/2 16:57

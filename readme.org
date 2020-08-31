@@ -1,3 +1,5 @@
-* Java utilities for happy developing!
+* A collection of useful Java utilities for general development
+It involves utilities dealing with data types, files, networks, etc.
 
-"I want it, I got it", as Ariana Grande sings. This project aims to give that kind of vibe for developing in Java.
+* Maven repository maintenance
+- New version number should be assigned to a package if and only if the source code of that package was changed or some of its dependencies were replaced or removed.- New version number should be assigned to a package if and only if the source code of that package was changed or some of its dependencies were replaced or removed.

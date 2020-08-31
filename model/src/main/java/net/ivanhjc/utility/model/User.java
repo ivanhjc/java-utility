@@ -1,4 +1,4 @@
-package net.ivanhjc.utility.data.model;
+package net.ivanhjc.utility.model;
 
 import java.math.BigDecimal;
 import java.util.Date;

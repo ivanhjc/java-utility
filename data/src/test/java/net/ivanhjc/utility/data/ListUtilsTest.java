@@ -1,7 +1,7 @@
 package net.ivanhjc.utility.data;
 
 import com.google.gson.GsonBuilder;
-import net.ivanhjc.utility.data.model.Person;
+import net.ivanhjc.utility.model.Person;
 import org.apache.commons.math3.util.Pair;
 import org.junit.Test;
 

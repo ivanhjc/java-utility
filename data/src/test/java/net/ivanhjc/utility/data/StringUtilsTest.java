@@ -1,6 +1,6 @@
 package net.ivanhjc.utility.data;
 
-import net.ivanhjc.utility.data.model.TokenInfo;
+import net.ivanhjc.utility.model.TokenInfo;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
