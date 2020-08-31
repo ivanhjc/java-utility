@@ -153,14 +153,37 @@ public class MapUtils extends org.apache.commons.collections.MapUtils {
     }
 
     /**
-     * Check if all the keys provided are present in the given map and do not point to null.
+     * Check if all the keys provided in a comma-separated string list have a non-null value in a map.
      *
-     * @param map  the map to look up
      * @param keys comma-separated string list
+     * @param map  the map to look up
      */
-    public static <K, V> boolean containsAll(Map<K, V> map, String keys) {
-        new ArrayList<>(map.keySet()).forEach(k -> map.remove(k, null));
-        return map.keySet().containsAll(Arrays.asList(keys.split(",")));
+    public static boolean notNull(String keys, Map map) {
+        for (String key : keys.split(",")) {
+            if (map.get(key) == null) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Return keys provided in a comma-separated string list that point to null in a map.
+     *
+     * @param keys comma-separated string list
+     * @param map  the map to look up
+     */
+    public static String getNullKeys(String keys, Map map) {
+        StringBuilder builder = new StringBuilder();
+        for (String key : keys.split(",")) {
+            if (map.get(key) == null) {
+                builder.append(key).append(",");
+            }
+        }
+        if (builder.length() > 0) {
+            builder.deleteCharAt(builder.length() - 1);
+        }
+        return builder.toString();
     }
 
     /**

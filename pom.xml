@@ -13,6 +13,7 @@
         <module>data</module>
         <module>auto</module>
         <module>file</module>
+        <module>model</module>
     </modules>
 
     <properties>

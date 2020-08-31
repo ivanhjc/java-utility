@@ -65,6 +65,11 @@ public class MapUtilsTest {
 
     @Test
     public void containsAll() {
-        System.out.println(MapUtils.containsAll(MapUtils.createMap("a", null, "b", 0, "c", null), "b,c"));
+        System.out.println(MapUtils.notNull("b,c", MapUtils.createMap("a", null, "b", 0, "c", null)));
+    }
+
+    @Test
+    public void getNullKeys() {
+        System.out.println(MapUtils.getNullKeys("b,c", MapUtils.createMap("a", null, "b", 0, "c", null)));
     }
 }
