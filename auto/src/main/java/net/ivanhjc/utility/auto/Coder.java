@@ -13,6 +13,9 @@ import org.apache.logging.log4j.Logger;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
 import java.io.IOException;
@@ -1670,10 +1673,10 @@ public class Coder {
         for (Field field : fields) {
             String fieldType = field.getType().getSimpleName();
             Object value = fieldType.equals("String") ? "\"Test\""
-                    : fieldType.equals("Integer") ? 42
-                    : fieldType.equals("Double") ? 42.01
-                    : fieldType.equals("Long") ? "42L"
-                    : fieldType.equals("BigDecimal") ? "BigDecimal.valueOf(42.01)"
+                    : fieldType.equals("Integer") ? 1
+                    : fieldType.equals("Double") ? 0.1
+                    : fieldType.equals("Long") ? "1L"
+                    : fieldType.equals("BigDecimal") ? "BigDecimal.valueOf(0.1)"
                     : fieldType.equals("Date") ? "new Date()"
                     : null;
             setters.append(String.format("    %s.%s(%s);\n", varName, "set".concat(org.apache.commons.lang3.StringUtils.capitalize(field.getName())), value));
@@ -1691,19 +1694,19 @@ public class Coder {
         switch (type.getSimpleName()) {
             case "Object":
             case "String":
-                return type.cast("test");
+                return type.cast("sample");
             case "Integer":
-                return type.cast(42);
+                return type.cast(1);
             case "Long":
-                return type.cast(42L);
+                return type.cast(1L);
             case "Double":
-                return type.cast(42.01);
+                return type.cast(0.1);
             case "Date":
                 return type.cast(new Date());
             case "Boolean":
                 return type.cast(false);
             case "BigDecimal":
-                return type.cast(BigDecimal.valueOf(42.01));
+                return type.cast(BigDecimal.valueOf(0.1));
             default:
                 if (type.isArray()) {
                     Object array = Array.newInstance(type.getComponentType(), 2);
@@ -1768,12 +1771,39 @@ public class Coder {
      * @return an object populated with sample values
      */
     public static Object sample(String classPath, String className) throws Exception {
+        return sample(getClass(classPath, className));
+    }
+
+    public static Class getClass(String classPath, String className) throws Exception {
         File file = new File(classPath);
         URL url = file.toURI().toURL();
         URL[] urls = new URL[]{url};
         ClassLoader cl = new URLClassLoader(urls);
-        Class cls = cl.loadClass(className);
-        return sample(cls);
+        return cl.loadClass(className);
+    }
+
+    public static List<Class> getClasses(List<String> classPaths, List<String> packages) throws Exception {
+        List<Class> classes = new ArrayList<>();
+        List<URL> urls = new ArrayList<>();
+        for (int i = 0; i < classPaths.size(); i++) {
+            urls.add(new File(classPaths.get(i)).toURI().toURL());
+        }
+        ClassLoader cl = new URLClassLoader(urls.toArray(new URL[0]));
+        for (String classPath : classPaths) {
+            for (String p : packages) {
+                File dir = new File(classPath + "/" + p.replace(".", "/"));
+                File[] files = dir.listFiles();
+                if (files != null && files.length > 0) {
+                    for (File file : files) {
+                        if (file.isFile()) {
+                            String className = p + "." + StringUtils.substringBefore(file.getName(), ".class");
+                            classes.add(cl.loadClass(className));
+                        }
+                    }
+                }
+            }
+        }
+        return classes;
     }
 
     /**
@@ -1791,6 +1821,21 @@ public class Coder {
         } catch (SQLException | ClassNotFoundException e) {
             e.printStackTrace();
         }
+    }
+
+    public static List<String> getServletPaths(List<String> classPaths, List<String> packages) throws Exception {
+        List<String> paths = new ArrayList<>();
+        List<Class> classes = getClasses(classPaths, packages);
+        for (Class cls : classes) {
+            if (cls.isAnnotationPresent(Controller.class) || cls.isAnnotationPresent(RestController.class)) {
+                Method[] methods = cls.getDeclaredMethods();
+                for (Method method : methods) {
+                    RequestMapping a = method.getAnnotation(RequestMapping.class);
+                    paths.addAll(Arrays.asList(a.path()));
+                }
+            }
+        }
+        return paths;
     }
 
     // Private utility members go here below ===================================================

@@ -40,6 +40,7 @@ public class POIUtils {
     private static final String DEFAULT_DATE_FORMAT = "yyyy/m/d";
     private static final int DEFAULT_START_ROW = 0;
     private static final int DEFAULT_START_COLUMN = 0;
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     private XSSFWorkbook workbook;
     private Sheet sheet;
@@ -497,7 +498,7 @@ public class POIUtils {
                 return cell.getStringCellValue();
             case Cell.CELL_TYPE_NUMERIC:
                 if (DateUtil.isCellDateFormatted(cell))
-                    return DateUtils.DATE_FORMAT_01.format(cell.getDateCellValue());
+                    return DATE_FORMAT.format(cell.getDateCellValue());
                 return String.valueOf((int) cell.getNumericCellValue());
             case Cell.CELL_TYPE_BOOLEAN:
                 return String.valueOf(cell.getBooleanCellValue());

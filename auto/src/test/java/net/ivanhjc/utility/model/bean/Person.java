@@ -6,6 +6,7 @@ package net.ivanhjc.utility.model.bean;
 public class Person {
     private Integer id;
     private String name;
+    private Person child;
 
     public Person() {
     }
@@ -29,5 +30,13 @@ public class Person {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Person getChild() {
+        return child;
+    }
+
+    public void setChild(Person child) {
+        this.child = child;
     }
 }

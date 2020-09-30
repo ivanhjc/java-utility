@@ -1,13 +1,16 @@
 package net.ivanhjc.utility.auto;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.Gson;
 import com.sun.codemodel.JCodeModel;
 import net.ivanhjc.utility.auto.enums.ColumnsOption;
 import net.ivanhjc.utility.auto.enums.CreateType;
 import net.ivanhjc.utility.auto.enums.SnippetType;
 import net.ivanhjc.utility.data.StringUtils;
 import net.ivanhjc.utility.file.POIUtils;
+
 import net.ivanhjc.utility.model.User;
+import net.ivanhjc.utility.model.bean.Person;
 import org.jsonschema2pojo.*;
 import org.jsonschema2pojo.rules.RuleFactory;
 import org.junit.Test;
@@ -27,6 +30,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * @author Ivan Huang on 2018/2/27
@@ -36,7 +40,7 @@ public class CoderTest {
     private Coder coder;
 
     public CoderTest() throws SQLException, ClassNotFoundException {
-        coder = new Coder("coder-tslease.properties");
+        coder = new Coder("coder-hail.properties");
         coder.CONFIG.dropPrefix(true)
                 .overwrite(true)
                 .mapUnderscoreToCamelCase(false)
@@ -189,8 +193,8 @@ public class CoderTest {
 
     @Test
     public void createEnums() throws Exception {
-        coder.init("t_easy_activity");
-        coder.createEnums("scene_type");
+        coder.init("t_order_monitor");
+        coder.createEnums("monitor_type,monitor_level,monitor_rule,state");
     }
 
     @Test
@@ -212,15 +216,31 @@ public class CoderTest {
     public void sample() throws Exception {
 //        System.out.println(Coder.sample(String.class));
 //        System.out.println(Coder.sample(Integer.class));
-        System.out.println(StringUtils.GSON_NULL.toJson(Coder.sample(User.class)));
+//        System.out.println(StringUtils.GSON_NULL.toJson(Coder.sample(User.class)));
 //
+        System.out.println(new Gson().toJson(Coder.sample("/home/ivanhjc/Projects/car-hailing/car-hailing-model/target/classes/", "com.winsky.carhailing.model.bo.common.SystemConfigStandardLimitConfig")));
+//        System.out.println(Coder.snippetBeanSetters(Coder.getClass("/home/ivanhjc/Projects/car-hailing/car-hailing-model/target/classes/", "com.winsky.carhailing.model.entity.OrderMonitorEntity"), "bean"));
 //        System.out.println(StringUtils.GSON_NULL.toJson(Coder.sample(Car.class)));
 //        System.out.println(StringUtils.GSON_NULL.toJson(Coder.sample(User[].class)));
 //        System.out.println(StringUtils.GSON_NULL.toJson(Coder.sample(int[].class)));
 //        System.out.println(StringUtils.GSON_NULL.toJson(Coder.sample(Map.class)));
+//        System.out.println(new Gson().toJson(Coder.sample(Person.class)));
     }
 
     // TODO: 5/21/19 Load class problem, Bean class problem
+
+    @Test
+    public void getServletPaths() throws Exception {
+        System.out.println(Coder.getServletPaths(
+                Arrays.asList(
+                        "file:/home/ivanhjc/Projects/winsky-lease/lease-market-web/target/classes",
+                        "file:/home/ivanhjc/Projects/winsky-lease/lease-common/target/classes"),
+                Arrays.asList(
+                        "com.winsky.lease.market.web.controller",
+                        "com.winsky.lease.common.base",
+                        "com.winsky.lease.common.exception")));
+    }
+
     @Test
     public void exportBluetoothPerformance() throws Exception {
 //        2019-05-15 11:42:58.573 [XNIO-2 task-15] INFO  com.winsky.lease.eoms.app.handler.LoginInterceptor - /carApi/carControl {"engineNo":"5201277","opType":"1","state":"0","time":"6.519","workOrderId":"321161","userId":"290","carId":"676","order":"FLASHERS","token":"6024c69ce62b425db5a16dc53f5ae822"}, {"User-Agent":"okhttp/3.3.1","Connection":"close","OSTYPE":"Android","PHONETYPE":"XiaomiMI MAX 2","Host":"h5-web","APPVER":"2.0.5","Accept-Encoding":"gzip","Content-Length":"0","NETSTATE":"NETWORK_WIFI","OSVER":"Android7.1.1"
@@ -407,5 +427,16 @@ public class CoderTest {
         mapper.generate(codeModel, "WeChatUserInfo", "wechat", source);
 
         codeModel.build(new File("F:\\projects\\onenote\\src\\main\\resources\\schema"));
+    }
+
+    @Test
+    public void nullChecking() {
+        Person person = null;
+//        Person person = new Person(1, "a");
+//        person.setChild(new Person(2, "b"));
+//        person.getChild().setChild(new Person(3, "c"));
+        final String[] name = new String[1];
+        Optional.of(person).map(Person::getChild).map(Person::getChild).map(Person::getName).ifPresent(s -> name[0] = s);
+        System.out.println(Arrays.asList(name));
     }
 }

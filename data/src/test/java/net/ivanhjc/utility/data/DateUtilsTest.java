@@ -8,17 +8,20 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 
 /**
  * @author Ivan Huang on 2018/1/3
  */
 public class DateUtilsTest {
 
+    private static final SimpleDateFormat f0 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static final SimpleDateFormat f1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss EEE", Locale.ENGLISH);
     private static final String testDate1 = "2018-3-26 17:50:02";
 
     @Test
     public void parseDate() throws ParseException {
-        Date date = DateUtils.DATE_FORMAT_01.parse(testDate1);
+        Date date = f0.parse(testDate1);
         System.out.println(date);
     }
 
@@ -29,7 +32,7 @@ public class DateUtilsTest {
 
     @Test
     public void getTime() throws ParseException {
-        System.out.println(DateUtils.getTime(DateUtils.DATE_FORMAT_01.parse(testDate1)));
+        System.out.println(DateUtils.getTime(f0.parse(testDate1)));
     }
 
     @Test
@@ -45,12 +48,12 @@ public class DateUtilsTest {
 
     @Test
     public void dayOfWeekMon1() throws ParseException {
-        System.out.println(DateUtils.dayOfWeekMon1(DateUtils.DATE_FORMAT_01.parse(testDate1)));
+        System.out.println(DateUtils.dayOfWeekMon1(f0.parse(testDate1)));
     }
 
     @Test
     public void dayOfMonth() throws ParseException {
-        System.out.println(DateUtils.dayOfMonth(DateUtils.DATE_FORMAT_01.parse(testDate1)));
+        System.out.println(DateUtils.dayOfMonth(f0.parse(testDate1)));
     }
 
     @Test
@@ -77,7 +80,7 @@ public class DateUtilsTest {
         String[] days = {"0,1,2,3", "-1,0,1,2,5", "8,9,10"};
         for (Date date1 : dates) {
             for (String day : days) {
-                System.out.printf("%-30s %-50s %-10s %s%n", DateUtils.DATE_FORMAT_02.format(date1), day, pointer, DateUtils.inDaysOfWeek(date1, day));
+                System.out.printf("%-30s %-50s %-10s %s%n", f1.format(date1), day, pointer, DateUtils.inDaysOfWeek(date1, day));
             }
         }
     }
@@ -94,7 +97,7 @@ public class DateUtilsTest {
         String[] days = {"0,1,2,3,28", "-1,0,1,2,5,13", "8,9,10,17,19,25"};
         for (Date date1 : dates) {
             for (String day : days) {
-                System.out.printf("%-30s %-50s %-10s %s%n", DateUtils.DATE_FORMAT_01.format(date1), day, pointer, DateUtils.inDaysOfMonth(date1, day));
+                System.out.printf("%-30s %-50s %-10s %s%n", f0.format(date1), day, pointer, DateUtils.inDaysOfMonth(date1, day));
             }
         }
     }
@@ -136,7 +139,7 @@ public class DateUtilsTest {
 
     @Test
     public void isOverFromNow() throws ParseException {
-        System.out.println(DateUtils.isOverFromNow(DateUtils.DATE_FORMAT_01.parse("2018-08-21 19:00:00"), 8, DateUtils.TimeUnit.MINUTE));
+        System.out.println(DateUtils.isOverFromNow(f0.parse("2018-08-21 19:00:00"), 8, DateUtils.TimeUnit.MINUTE));
     }
 
     @Test

@@ -12,7 +12,6 @@ import java.time.temporal.Temporal;
 import java.time.temporal.TemporalUnit;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Locale;
 
 /**
  * Date and time utilities
@@ -20,11 +19,6 @@ import java.util.Locale;
  * @author Ivan Huang on 2018/1/3
  */
 public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
-
-    public static final SimpleDateFormat DATE_FORMAT_ONLY_TIME = new SimpleDateFormat("HH:mm:ss");
-    public static final SimpleDateFormat DATE_FORMAT_01 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    public static final SimpleDateFormat DATE_FORMAT_02 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss EEE", Locale.ENGLISH);
-    public static final SimpleDateFormat DATE_FORMAT_03 = new SimpleDateFormat("yyyyMMddHHmmss");
 
     /**
      * Returns the current time in the form "hh:mm:ss"
@@ -42,7 +36,7 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
      * @return the time string to return
      */
     public static String getTime(Date date) {
-        return DATE_FORMAT_ONLY_TIME.format(date);
+        return new SimpleDateFormat("HH:mm:ss").format(date);
     }
 
     /**
@@ -206,6 +200,17 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
     }
 
     /**
+     * Return the number of seconds, minutes, etc. between two dates
+     *
+     * @param date1 the later date
+     * @param date2 the earlier date
+     * @param timeUnit  the unit of the number
+     */
+    public static BigDecimal getIntervalBetween(Date date1, Date date2, TimeUnit timeUnit) {
+        return BigDecimal.valueOf((double) (date1.getTime() - date2.getTime()) / timeUnit.MULTIPLIER);
+    }
+
+    /**
      * Returns the number of seconds between two times
      *
      * @param time1 value in range 00:00:00-23:59:59 {@link java.time.temporal.ChronoField#HOUR_OF_DAY}
@@ -259,17 +264,6 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
      */
     public static boolean isOverFromNow(Date startPoint, double timeLength, TimeUnit unit) {
         return new Date().getTime() - startPoint.getTime() > timeLength * unit.MULTIPLIER;
-    }
-
-    /**
-     * Returns the number of seconds, minutes, etc. between two dates
-     *
-     * @param date1 the later date
-     * @param date2 the earlier date
-     * @param timeUnit  the unit of the number
-     */
-    public static BigDecimal getIntervalBetween(Date date1, Date date2, TimeUnit timeUnit) {
-        return BigDecimal.valueOf((double) (date1.getTime() - date2.getTime()) / timeUnit.MULTIPLIER);
     }
 
     /**
