@@ -22,17 +22,7 @@ public class JavaTest {
 
     @Test
     public void nullTest() {
-
-        /*
-        null instanceof Object        ->   false
-        (String) null                 ->   null
-        String.valueOf(null)          ->   "null"
-        Integer.equals(null)          ->   false
-        Integer.valueOf(null)         ->   java.lang.NumberFormatException: null
-        "1101".equals(null)           ->   false
-        */
-
-        String f = "%-30s%-5s%s%n";
+        /*String f = "%-30s%-5s%s%n";
         System.out.printf(f, "null instanceof Object", "->", null instanceof Object);
 
         Map<String, Object> map = new HashMap<>();
@@ -42,16 +32,20 @@ public class JavaTest {
         try {
             Person a1 = (Person) map.get("k3");
             System.out.printf(f, "(String) null", "->", a1);
-            /*System.out.printf(f, "(String) null", "->", a1);
+            *//*System.out.printf(f, "(String) null", "->", a1);
             String a2 = String.valueOf(map.get("k3"));
             System.out.printf(f, "String.valueOf(null)", "->", "\"" + a2 + "\"");
             Integer b1 = 1;
             Integer b2 = (Integer) map.get("k3");
             System.out.printf(f, "Integer.equals(null)", "->", b1.equals(b2));
-            System.out.printf(f, "Integer.valueOf()", "->", Integer.valueOf(null));*/
+            System.out.printf(f, "Integer.valueOf()", "->", Integer.valueOf(null));*//*
         } catch (Exception e) {
             e.printStackTrace();
-        }
+        }*/
+
+        Boolean tem = null;
+        Boolean res = false ? false : tem;
+        System.out.println(res);
     }
 
     @Test
