@@ -5,6 +5,7 @@ import net.ivanhjc.utility.auto.enums.ColumnsOption;
 import java.util.List;
 
 public class ColumnConfigs {
+
     /**
      * Prefix that should be used before colName
      */
