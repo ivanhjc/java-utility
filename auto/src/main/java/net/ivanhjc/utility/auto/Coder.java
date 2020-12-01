@@ -59,7 +59,7 @@ public class Coder {
      * @throws ClassNotFoundException
      * @throws SQLException
      */
-    public Coder() throws ClassNotFoundException, SQLException {
+    public Coder() {
         this(null);
     }
 
@@ -67,15 +67,19 @@ public class Coder {
      * Initializes a coder with the custom configurations specified in an external file
      *
      * @param config path of the file, absolute or relative to classpath, or null if to use default configurations
-     * @throws ClassNotFoundException
-     * @throws SQLException
      */
-    public Coder(String config) throws ClassNotFoundException, SQLException {
+    public Coder(String config) {
         if (config == null) {
             CONFIG = new Config();
         } else {
             CONFIG = new Config(config);
         }
+    }
+
+    /**
+     * Connect to dababase using the specified config file
+     */
+    public void connectToDB() throws ClassNotFoundException, SQLException {
         Class.forName("com.mysql.cj.jdbc.Driver");
         connection = DriverManager.getConnection(CONFIG.JDBC_URL, CONFIG.USERNAME, CONFIG.PASSWORD);
     }
@@ -1699,6 +1703,8 @@ public class Coder {
                 return type.cast(1);
             case "Long":
                 return type.cast(1L);
+            case "Float":
+                return type.cast(0.1f);
             case "Double":
                 return type.cast(0.1);
             case "Date":
@@ -1814,6 +1820,7 @@ public class Coder {
     public static void printTableInfo(String... tables) {
         try {
             Coder automator = new Coder();
+            automator.connectToDB();
             for (String table : tables) {
                 automator.init(table);
                 automator.printTableInfo();
@@ -1987,7 +1994,9 @@ public class Coder {
         Map<Integer, Map<String, Object>> fieldMap = new HashMap<>();
         String[] fieldsToImport = new String[fields.length];
         StringBuilder fieldsToImportStr = new StringBuilder();
-        Connection connection = new Coder(config).getConnection();
+        Coder coder = new Coder(config);
+        coder.connectToDB();
+        Connection connection = coder.getConnection();
         for (int i = 0; i < fields.length; i++) {
             String str = fields[i];
             if (str.isEmpty()) {
