@@ -6,6 +6,7 @@ import net.ivanhjc.utility.data.ListUtils;
 import net.ivanhjc.utility.data.SplitRegex;
 import net.ivanhjc.utility.data.StringUtils;
 import net.ivanhjc.utility.file.FileUtils;
+import net.ivanhjc.utility.file.POIUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.text.WordUtils;
 import org.apache.logging.log4j.LogManager;
@@ -30,8 +31,6 @@ import java.nio.file.Path;
 import java.sql.*;
 import java.util.Date;
 import java.util.*;
-
-import static net.ivanhjc.utility.file.POIUtils.getCellValue;
 
 /**
  * A code generating class for general web projects which adopt a client-server model. On the server side it provides methods for
@@ -59,7 +58,7 @@ public class Coder {
      * @throws ClassNotFoundException
      * @throws SQLException
      */
-    public Coder() throws ClassNotFoundException, SQLException {
+    public Coder() {
         this(null);
     }
 
@@ -67,15 +66,19 @@ public class Coder {
      * Initializes a coder with the custom configurations specified in an external file
      *
      * @param config path of the file, absolute or relative to classpath, or null if to use default configurations
-     * @throws ClassNotFoundException
-     * @throws SQLException
      */
-    public Coder(String config) throws ClassNotFoundException, SQLException {
+    public Coder(String config) {
         if (config == null) {
             CONFIG = new Config();
         } else {
             CONFIG = new Config(config);
         }
+    }
+
+    /**
+     * Connect to dababase using the specified config file
+     */
+    public void connectToDB() throws ClassNotFoundException, SQLException {
         Class.forName("com.mysql.cj.jdbc.Driver");
         connection = DriverManager.getConnection(CONFIG.JDBC_URL, CONFIG.USERNAME, CONFIG.PASSWORD);
     }
@@ -89,26 +92,7 @@ public class Coder {
         CONFIG.init(tableName);
         //Initialize columns
         columns = new ArrayList<>();
-        PreparedStatement ps = connection.prepareStatement("SHOW FULL COLUMNS FROM " + tableName);
-        ResultSet rs = ps.executeQuery();
-        if (null != rs) {
-            if (!rs.isBeforeFirst()) {
-                throw new RuntimeException(String.format("Table \"%s\" not found", tableName));
-            }
 
-            while (rs.next()) {
-                ColumnInfo info = new ColumnInfo();
-                info.setName(rs.getString("Field"));
-                info.setType(DataTypeMap.getDataType(rs.getString("Type")));
-                info.setIsNullable(rs.getString("Null"));
-                info.setKey(rs.getString("Key"));
-                info.setComment(rs.getString("Comment"));
-                info.setVarName(toVarName(info.getName()));
-                info.setVarType(DataTypeMap.valueOf(info.getType()).javaType);
-                columns.add(info);
-            }
-        }
-        ps.close();
         List<ColumnInfo> cols = ColumnsOption.PK.getColumns(columns);
         primaryKey = cols == null || cols.size() == 0 ? null : cols.get(0);
         return this;
@@ -1037,7 +1021,7 @@ public class Coder {
                         }
                         objects.replace(objects.length() - 2, objects.length(), ";\n\n");
                         data = "" +
-                                "package " + CONFIG.PACKAGE_ENUM + ";\n\n" +
+                                "package " + CONFIG.PACKAGE_ENUM + ";\n\n" +                             
                                 "/**\n" +
                                 " * " + classComment + "\n" +
                                 " *\n" +
@@ -1623,27 +1607,6 @@ public class Coder {
         System.out.println();
     }
 
-    public <T> List<T> selectList(String sql, Class<T> type, Map<String, String> resultMap) throws SQLException, IllegalAccessException, InstantiationException, NoSuchFieldException {
-        List<T> objects = new ArrayList<>();
-        PreparedStatement ps = connection.prepareStatement(sql);
-        ResultSet rs = ps.executeQuery();
-        if (null != rs) {
-            if (!rs.isBeforeFirst()) {
-                throw new RuntimeException("Invalid query statement");
-            }
-
-            while (rs.next()) {
-                T o = type.newInstance();
-                for (Map.Entry<String, String> entry : resultMap.entrySet()) {
-                    type.getDeclaredField(entry.getKey()).set(o, rs.getObject(entry.getValue()));
-                }
-                objects.add(o);
-            }
-        }
-        ps.close();
-        return objects;
-    }
-
     /**
      * Prints a method for instantiating a POJO class with calling its setters
      *
@@ -1685,10 +1648,10 @@ public class Coder {
     }
 
     /**
-     * Returns a sample object filled with sample data out of a POJO class. The POJO class can contain getter and setter methods or only member fields
-     * no matter what their accessibility is. Java value types are also accepted for which it returns their corresponding sample values.
+     * Returns a sample object of the supplied type, which may be common Java types such as String, Integer and array
+     * types, or a POJO class. The POJO class may or may not contain getter and setter methods.
      *
-     * @param type the template type out of which an object is created
+     * @param type the template type out of which the sample object is created
      */
     public static <T> T sample(Class<T> type) throws IllegalAccessException, InstantiationException, ClassNotFoundException {
         switch (type.getSimpleName()) {
@@ -1699,6 +1662,8 @@ public class Coder {
                 return type.cast(1);
             case "Long":
                 return type.cast(1L);
+            case "Float":
+                return type.cast(0.1f);
             case "Double":
                 return type.cast(0.1);
             case "Date":
@@ -1814,6 +1779,7 @@ public class Coder {
     public static void printTableInfo(String... tables) {
         try {
             Coder automator = new Coder();
+            automator.connectToDB();
             for (String table : tables) {
                 automator.init(table);
                 automator.printTableInfo();
@@ -1896,17 +1862,6 @@ public class Coder {
         return propertyNames.toString();
     }
 
-    private static String toVarName(String colName) {
-        char[] varChars = colName.toCharArray();
-        for (int i = 0; i < varChars.length; i++) {
-            char c = varChars[i];
-            if (c == '_') {
-                varChars[i + 1] = String.valueOf(varChars[i + 1]).toUpperCase().charAt(0);
-            }
-        }
-        return new String(varChars).replace("_", "");
-    }
-
     private File writeToFile(Path path, String data) throws IOException {
         File file;
         if (CONFIG.filename == null) {
@@ -1987,7 +1942,9 @@ public class Coder {
         Map<Integer, Map<String, Object>> fieldMap = new HashMap<>();
         String[] fieldsToImport = new String[fields.length];
         StringBuilder fieldsToImportStr = new StringBuilder();
-        Connection connection = new Coder(config).getConnection();
+        Coder coder = new Coder(config);
+        coder.connectToDB();
+        Connection connection = coder.getConnection();
         for (int i = 0; i < fields.length; i++) {
             String str = fields[i];
             if (str.isEmpty()) {
@@ -2066,7 +2023,7 @@ public class Coder {
 
                     String value;
                     if (j < lastCellNum) {
-                        value = getCellValue(row.getCell(j));
+                        value = POIUtils.getCellValue(row.getCell(j));
                     } else {
                         value = org.apache.commons.lang3.StringUtils.substringBetween(fields[j], "[", "]");
                     }

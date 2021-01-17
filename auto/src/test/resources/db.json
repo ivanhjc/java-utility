@@ -1,0 +1,8 @@
+[
+  {
+    "name": "dg02",
+    "url": "jdbc:mysql://hcm-dev-dg02mysql.beta.hic.cloud:3306/stdhcmusera_dm?serverTimezone=GMT%2B8&verifyServerCertificate=false&useSSL=true",
+    "username": "dbAdmin",
+    "password": "hcm_dbAdmin"
+  }
+]

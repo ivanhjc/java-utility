@@ -9,6 +9,7 @@ public enum DataTypeMap {
     VARCHAR("VARCHAR", "String", "\"test\""),
     CHAR("CHAR", "String", "test"),
     TEXT("TEXT", "String", "test"),
+    LONGTEXT("LONGTEXT", "String", "test"),
     DATE("DATE", "Date", "new Date()"),
     DATETIME("DATETIME", "Date", "new Date()"),
     BOOLEAN("BOOLEAN", "Boolean", "false"),

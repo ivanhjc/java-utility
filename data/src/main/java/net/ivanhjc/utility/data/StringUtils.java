@@ -57,15 +57,13 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
     }
 
     /**
-     * Converts a string from camel casing (e.g. "wordFamily" or "WordFamily") to snake casing (e.g. "word_family")
+     * Convert a string from camel casing (e.g. "wordFamily" or "WordFamily") to snake casing (e.g. "word_family"). Null
+     * or empty strings are not accepted.
      *
-     * @param str may be null or empty, returns as is in such cases
-     * @return the converted string
+     * @param str The string to convert
+     * @return The converted string
      */
     public static String camelToSnake(String str) {
-        if (str == null || str.trim().isEmpty())
-            return str;
-
         String[] strings = str.split("(?=[A-Z])");
         StringBuilder stringBuilder = new StringBuilder();
         for (int i = 0; i < strings.length; i++) {
@@ -78,7 +76,11 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
     }
 
     /**
-     * Converts a string from snake casing (word_family or Word_FamILy) to camel casing (WordFamily) where every word is capitalized
+     * Converts a string from snake casing to camel casing where every word is capitalized, e.g.
+     * <pre>{@code
+     * word_family, Word_FamILy -> WordFamily
+     * }
+     * </pre>
      *
      * @param str may be null or empty, returns as is in such cases
      * @return the converted string

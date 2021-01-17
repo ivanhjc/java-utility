@@ -171,9 +171,9 @@ public class ListUtilsTest {
 
     @Test
     public void VennPartition() {
-        System.out.println(ListUtils.vennPartition(Arrays.asList("a", "b", "a", "c"), Arrays.asList("a", "b", "c"), null));
-        System.out.println(ListUtils.vennPartition(null, Arrays.asList("a", "b", "c"), null));
-        System.out.println(ListUtils.vennPartition(
+        System.out.println(ListUtils.venn(Arrays.asList("a", "b", "a", "c"), Arrays.asList("a", "b", "c"), null));
+        System.out.println(ListUtils.venn(null, Arrays.asList("a", "b", "c"), null));
+        System.out.println(ListUtils.venn(
                 Arrays.asList(new Person(1, "A"), new Person(2, "B")),
                 Arrays.asList(new Person(1, "test"), new Person(3, "C")),
                 Comparator.comparing(Person::getId)));

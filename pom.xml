@@ -14,6 +14,7 @@
         <module>auto</module>
         <module>file</module>
         <module>model</module>
+        <module>guide</module>
     </modules>
 
     <properties>

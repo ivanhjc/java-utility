@@ -39,4 +39,12 @@ public class Person {
     public void setChild(Person child) {
         this.child = child;
     }
+
+    public static int compareFirstNames(Person p1, Person p2) {
+        return p1.getName().compareTo(p2.getName());
+    }
+
+    public int compare(Person person) {
+        return this.getName().compareTo(person.getName());
+    }
 }

@@ -534,16 +534,17 @@ public class ListUtils {
     }
 
     /**
-     * Given two lists finds items only present in the first list, items only present in the second list, and items present in both lists respectively.
-     * The equality of two items is customary. Duplicate items are treated as one and kept in its corresponding list accordingly. The original lists are
-     * kept unchanged. Thinking of the process as a Venn diagram gives name to this method.
+     * Given two lists return items only present in the first list, items present in both lists, and items only present
+     * in the second list. The equality of the items is customizable. Duplicate items in a given list are treated as one
+     * that would be put in its corresponding list. The original lists are kept unchanged. Thinking of the process as
+     * a Venn diagram partition gives name to this method.
      *
-     * @param leftList  the first list
-     * @param rightList the second list
-     * @param c         comparing rules, null if the items of the lists are {@link Comparable}
-     * @return the 3 lists as described above
+     * @param leftList   the first list
+     * @param rightList  the second list
+     * @param comparator comparing rules. It can be null if the items of the lists are {@link Comparable}.
+     * @return the 3 lists in the order described above
      */
-    public static <T> List<List<T>> vennPartition(List<T> leftList, List<T> rightList, Comparator<T> c) {
+    public static <T> List<List<T>> venn(List<T> leftList, List<T> rightList, Comparator<T> comparator) {
         if (leftList == null || leftList.isEmpty()) {
             return new ArrayList<>(Arrays.asList(new ArrayList<>(), new ArrayList<>(), rightList == null ? new ArrayList<>() : rightList));
         }
@@ -552,7 +553,7 @@ public class ListUtils {
             return new ArrayList<>(Arrays.asList(leftList, new ArrayList<>(), new ArrayList<>()));
         }
 
-        Comparator<T> comparator = c == null ? (o1, o2) -> ((Comparable) o1).compareTo(o2) : c;
+        Comparator<T> finalComp = comparator == null ? Comparator.comparing(o -> ((Comparable) o)) : comparator;
         List<T> leftItems = deduplicate(leftList);
         List<T> rightItems = deduplicate(rightList);
         List<T> commonItems = new ArrayList<>();
@@ -560,7 +561,7 @@ public class ListUtils {
             T leftItem = leftItems.get(i);
             for (int j = 0; j < rightItems.size(); j++) {
                 T rightItem = rightItems.get(j);
-                if (comparator.compare(leftItem, rightItem) == 0) {
+                if (finalComp.compare(leftItem, rightItem) == 0) {
                     commonItems.add(rightItem);
                     leftItems.remove(leftItem);
                     rightItems.remove(rightItem);

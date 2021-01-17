@@ -1,6 +1,6 @@
 package net.ivanhjc.utility.file;
 
-import net.ivanhjc.utility.data.DateUtils;
+import net.ivanhjc.utility.data.ListUtils;
 import net.ivanhjc.utility.data.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,82 +19,97 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.security.GeneralSecurityException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 // TODO: 2017/3/15 Add new fields to existing field table and automatically put these fields to their corresponding locations in the exported sheet
 
 /**
- * This utility class is intended to process MS office documents and tries to be as intuitive as possible. It provides some
- * frequent operations just as when you working on the UI of these documents. For example, you would get an instance of this
- * class first before you can do many tasks. The you can create a new document ({@link #open()}) or open an existing one ({@link #open(String, String)}).
+ * Apache POI (Poor Obfuscation Implementation) utility class. It aims to provide methods to process common office
+ * documents (MS Word, Excel, etc.) as fast and intuitive as possible. Generally you would firstly create an instance
+ * of this class and wrap a workbook in it as the working copy by using {@link #open()} or {@link #open(String, String)
+ * and then you can continue other operations on the workbook.
  *
  * @author Ivan Huang 2017/2/28 13:41
  */
 public class POIUtils {
-
-    private static final Logger LOG = LogManager.getLogger();
-
+    private static final Logger log = LogManager.getLogger();
     private static final String FIELD_DELIMITER = ".";
-    private static final String DEFAULT_PROPERTY_DELIMITER = ".";
     private static final String DEFAULT_DATE_FORMAT = "yyyy/m/d";
-    private static final int DEFAULT_START_ROW = 0;
-    private static final int DEFAULT_START_COLUMN = 0;
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-    private XSSFWorkbook workbook;
+    private static final String DEFAULT_FILE_NAME = "output.xlsx";
+    private static final SimpleDateFormat COMMON_DATE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    /**
+     * The workbook to work on
+     */
+    private Workbook workbook;
+    /**
+     * The sheet to work on
+     */
     private Sheet sheet;
     private List<Header> headers;
-    //    private List<T> data;
-    private int tableStartRow; // the first row of the table
-    private int tableStartCol; // the first column of the table
-    private int headerEndRow; // the index of the last row of header area
-    private int headerEndCol; // the index of the last column of header area
-    private int dataRows = 1; // the number of rows of data area
+    /**
+     * The first row of the table used by {@link #createTable(LinkedHashMap, List)}
+     */
+    private int tableStartRow = 0;
+    /**
+     * The first column of the table used by {@link #createTable(LinkedHashMap, List)}
+     */
+    private int tableStartCol = 0;
+    /**
+     * the index of the last row of header area
+     */
+    private int headerEndRow;
+    /**
+     * the index of the last column of header area
+     */
+    private int headerEndCol;
+    /**
+     * the number of rows of data area
+     */
+    private int dataRows = 1;
     private List<Header> allHeaders; // All headers from left to right and from bottom to top
-    private String beanPackage; //the package of beans that are to be processed
     private String saveDir;
     private String fileName;
 
-    /**
-     * Creates an instance of this util.
-     */
     public POIUtils() {
-
     }
 
-    //======================Workbook level operations======================
-
     /**
-     * By default this creates a new workbook named "output.xlsx" and creates a new sheet named "Sheet1". After you've done you can save the workbook by calling
-     * {@link #save()}
+     * Create a new workbook with the default name "output.xlsx" and a new sheet in it named "Sheet1". After you're done
+     * you should call {@link #saveAs()} to save the workbook.
      */
-    public void open() {
+    public POIUtils open() {
         this.workbook = new XSSFWorkbook();
         this.sheet = workbook.createSheet("Sheet1");
+        return this;
     }
 
     /**
-     * Opens an existing workbook and its existing sheet for processing. If the workbook has no such named sheet create a new one with the name.
+     * Open a workbook and sheet for processing. If the workbook or sheet doesn't exist create one.
      *
-     * @param workbook the file path of the workbook
-     * @param sheet    name of the sheet to work on
+     * @param workbook path of the workbook, relative or absolute
+     * @param sheet    name of the sheet
      */
-    public void open(String workbook, String sheet) throws IOException {
+    public POIUtils open(String workbook, String sheet) throws IOException {
         this.workbook = new XSSFWorkbook(workbook);
         this.sheet = this.workbook.getSheet(sheet);
         if (this.sheet == null) {
             this.sheet = this.workbook.createSheet(sheet);
         }
+        return this;
     }
 
     /**
-     * Saves the workbook to default location "{classpath}/target/output.xlsx".
+     * Save the workbook to the default location "classpath/target/output.xlsx".
      *
      * @return the saved file
      */
-    public File save() throws IOException {
-        return saveAs("target", "output.xlsx");
+    public File saveAs() throws IOException {
+        return saveAs("target", DEFAULT_FILE_NAME);
     }
 
     /**
@@ -115,7 +130,7 @@ public class POIUtils {
         FileOutputStream fos = new FileOutputStream(file);
         workbook.write(fos);
         fos.close();
-        LOG.info("File saved -> " + file.getAbsolutePath());
+        log.info("File saved -> " + file.getAbsolutePath());
         return file;
     }
 
@@ -135,7 +150,7 @@ public class POIUtils {
      * Closes the workbook without saving the changes
      */
     public void closeToDiscard() {
-        this.workbook.getPackage().revert();
+        ((XSSFWorkbook) this.workbook).getPackage().revert();
     }
 
     //======================Sheet level operations======================
@@ -157,142 +172,165 @@ public class POIUtils {
         workbook.setSheetName(sheetIndex, newName);
     }
 
-    /**
-     * Specifying the package of the bean classes.
-     *
-     * @param beanPackage full name of the package, e.g. "com.google.ai.bean"
-     */
-    public void setBeanPackage(String beanPackage) {
-        this.beanPackage = beanPackage;
-    }
-
     public void resetDataRows() {
         dataRows = 1;
+    }
+
+    /**
+     * Set the first row of the table created by {@link #createTable(LinkedHashMap, List)}
+     *
+     * @param rowIdx row index, 0-based
+     */
+    public POIUtils setTableStartRow(int rowIdx) {
+        this.tableStartRow = rowIdx;
+        return this;
+    }
+
+    /**
+     * Set the first column of the table created by {@link #createTable(LinkedHashMap, List)}
+     *
+     * @param colIdx column index, 0-based
+     */
+    public POIUtils setTableStartCol(int colIdx) {
+        this.tableStartCol = colIdx;
+        return this;
     }
 
     /* -----------------------------------------------------------------Operations on a sheet*/
 
     /**
-     * Given a headerPropertyMap and a list of beans, create a table with headers and data on the processing sheet.
-     * This put the table in the top-left corner of the sheet by default. Before calling this method you may need
-     * to specify the package by calling setBeanPackage() where the type of the data should be looked for, or else
-     * it looks up in the root directory.
+     * Create a table with the supplied header specifier (fieldMap) and the corresponding list of data.
      *
-     * @param headerPropertyMap a header-property relationship representation wrapped in a LinkedHashMap object.<br>
-     *                          A header is the name of a column, that is, the value in the first cell of the column. A header may have sub-headers.
-     *                          A property denotes how to obtain values for the column of this header. In the LinkedHashMap object the header names
-     *                          are used as keys and properties as values. Sub-headers are marked by ":". For example, if a header named "project"
-     *                          has sub-headers "id", "name", and "date", they are represented as "project:id", "project:name", and "project:date"
-     *                          to be used as keys. Sub-headers can again have their own sub-headers and so on. The values are strings in the form
-     *                          "class.property" which means cells under this header should contain values returned by the specified property of
-     *                          the specified class objects. Order is important for headerPropertyMap to work. Specifically, properties that belong
-     *                          to the same class should be in a sequence where there are no intermittent properties from other classes. <br>
-     * @param data              data to be written to the table
+     * @param headerMap formatted as {@code Name:name,Gender:sex,...,Role:role,Role.Name:role.name,...} Each pair
+     *                  delimited by comma represents a mapping of the header name and the class field from which it
+     *                  obtains values. See {@link #createTable(LinkedHashMap, List)} for more details.
      */
-    public <T> void insertTable(LinkedHashMap<String, String> headerPropertyMap, List<T> data) throws Exception {
-        insertTable(DEFAULT_START_ROW, DEFAULT_START_COLUMN, headerPropertyMap, data);
+    public <T> POIUtils createTable(String headerMap, List<T> data) throws Exception {
+        return createTable(getFieldMap(headerMap), data);
     }
 
     /**
-     * Given a headerPropertyMap and a list of beans, create a table with headers and data on the processing sheet
+     * Create a table with the supplied header specifier (fieldMap) and the corresponding list of data. A use case is
+     * given as below:<p><br>
      *
-     * @param startRow          zero-based
-     * @param startCol          zero-based
-     * @param headerPropertyMap a header-property relationship representation wrapped in a LinkedHashMap object.<br>
-     *                          A header is the name of a column, that is, the value in the first cell of the column. A header may have sub-headers.
-     *                          A property denotes how to obtain values for the column of this header. In the LinkedHashMap object the header names
-     *                          are used as keys and properties as values. Sub-headers are marked by ":". For example, if a header named "project"
-     *                          has sub-headers "id", "name", and "date", they are represented as "project:id", "project:name", and "project:date"
-     *                          to be used as keys. Sub-headers can again have their own sub-headers and so on. The values are strings in the form
-     *                          "class.property" which means cells under this header should contain values returned by the specified property of
-     *                          the specified class objects. Order is important for headerPropertyMap to work. Specifically, properties that belong
-     *                          to the same class should be in a sequence where there are no intermittent properties from other classes. <br>
-     * @param data              data to be written to the table
-     *                          <p>
-     *                          <br><br>
-     *                          A usage case is given as below:<br>
-     *                          HeaderPropertyMap:<br>
-     *                          <pre><code style="font-family: consolas">
+     * FieldMap:
+     * <pre>
+     * {@code
+     * LinkedHashMap<String, String> map = new LinkedHashMap<>();
+     * map.put("ID", "id");
+     * map.put("Name", "name");
+     * map.put("Role", "role");
+     * map.put("Role.ID", "role.id");
+     * map.put("Role.Name", "role.name");
+     * }
+     * </pre>
+     * Data:
+     * <pre>
+     * {@code
+     * List<User> users = new ArrayList<>();
+     * users.add(new User(1, "John", new Role(1, "Admin")));
+     * users.add(new User(2, "Alex", new Role(1, "Admin")));
+     * }
+     * </pre>
+     * Result:<br>
+     * <pre>
+     * {@code
+     * |    |      |   Role     |
+     * | ID | Name --------------
+     * |    |      | ID | Name  |
+     * --------------------------
+     * | 1  | John | 1  | Admin |
+     * | 2  | Alex | 1  | Admin |
+     * }
+     * </pre>
      *
-     *                                 LinkedHashMap<String, String> map = new LinkedHashMap<>();<br>
-     *                                 map.put("id", "Class.id");<br>
-     *                                 map.put("name", "Class.name");<br>
-     *                                 map.put("headTeacher", "Class.headTeacher");<br>
-     *                                 map.put("monitor", "Class.monitor");<br>
-     *                                 map.put("student", "Class.studentList");<br>
-     *                                 map.put("student:id", "Student.id");<br>
-     *                                 map.put("student:name", "Student.name");<br>
-     *                                 map.put("student:age", "Student.age");<br>
-     *                                 map.put("student:address", "Student.address");<br>
-     *                                 map.put("student:dateEnter", "Student.dateEnter");<br>
-     *                                 map.put("term", "Class.term");<br><br>
+     * @param headerMap an ordered mapping of headers and their corresponding class fields from which they obtain values.
+     *                  A header is the name of a column put in the first cell. A field is the field residing in the
+     *                  component class of the supplied list of data. The mapping between them denotes where to obtain
+     *                  the values for the column under a header. For example, a table in the simplest form is like this:
+     *                  fieldMap is [ID:id,Name:name] and data is a list of User[id,name] objects.
+     *                  <p><br>
+     *                  A header may have sub-headers or child headers that can represent a nested group of data, and the
+     *                  child headers can have their child headers, and so on. Child headers and child fields are marked
+     *                  with a period ".". For example, if the above mentioned User class has a Role field, which has
+     *                  its own id and name, like this, User[id,name,Role[id,name]], then the fieldMap should be given as
+     *                  [ID:id,Name:name,Role:role,Role.ID:role.id,Role.Name:role.name].
+     *                  <p><br>
+     *                  The Order of the mappings is important. Specifically, child headers that belong to the same class
+     *                  should be supplied in sequence. When a header from another class is supplied it starts creating
+     *                  another group of headers.<br><br>
      *
-     *                                 Data:
-     *                                 <pre><code style="font-family: consolas">
-     *                                  SimpleDateFormat sdf = new SimpleDateFormat("yyyy/M/d");<br>
-     *                                  Student student1 = new Student();<br>
-     *                                  student1.setId(1);<br>
-     *                                  student1.setName("Evan");<br>
-     *                                  student1.setAge(12);<br>
-     *                                  student1.setAddress("Street1");<br>
-     *                                  student1.setDateEnter(sdf.parse("2017/8/1"));<br>
-     *                                  Student student2 = new Student();<br>
-     *                                  student2.setId(2);<br>
-     *                                  student2.setName("Mary");<br>
-     *                                  student2.setAge(11);<br>
-     *                                  student2.setAddress("Street2");<br>
-     *                                  student2.setDateEnter(sdf.parse("2017/8/1"));<br>
-     *                                  Student student3 = new Student();<br>
-     *                                  student3.setId(1);<br>
-     *                                  student3.setName("Mark");<br>
-     *                                  student3.setAge(16);<br>
-     *                                  student3.setAddress("Block1");<br>
-     *                                  student3.setDateEnter(sdf.parse("2017/8/1"));<br>
-     *                                  Class class1 = new Class();<br>
-     *                                  class1.setId(1);<br>
-     *                                  class1.setName("C1");<br>
-     *                                  class1.setHeadTeacher("Alexander");<br>
-     *                                  class1.setMonitor("Joey");<br>
-     *                                  class1.setTerm("1");<br>
-     *                                  class1.setStudentList(Arrays.asList(student1, student2));<br>
-     *                                  Class class2 = new Class();<br>
-     *                                  class2.setId(2);<br>
-     *                                  class2.setName("C2");<br>
-     *                                  class2.setHeadTeacher("Jack");<br>
-     *                                  class2.setMonitor("Mark");<br>
-     *                                  class2.setTerm("1");<br>
-     *                                  class2.setStudentList(Arrays.asList(student3));<br>
-     *                                  List<Class> classes = new ArrayList<>();<br>
-     *                                  classes.add(class1);<br>
-     *                                  classes.add(class2);<br>
-     *                                 </code></pre>
-     *                                 </p>
-     *                          <p>
-     *                                 This produces the table:<br>
-     *                                 <pre><code style="font-family: consolas">
-     *                                  ----------------------------------------------------------------<br>
-     *                                  |id|name|headTeacher|monitor|            student          |term|<br>
-     *                                  ----------------------------------------------------------------<br>
-     *                                  |  |    |           |       |id|name|age|address|dateEnter|    |<br>
-     *                                  ----------------------------------------------------------------<br>
-     *                                  |1 |C1  |Alexander  |Joey   |1 |Evan|12 |Street1|2017/8/1 |1   |<br>
-     *                                  ----------------------------------------------------------------<br>
-     *                                  |  |    |           |       |2 |Mary|11 |Street2|2017/8/1 |1   |<br>
-     *                                  ----------------------------------------------------------------<br>
-     *                                  |2 |C2  |Jack       |Mark   |1 |Mark|16 |Block1 |2017/8/1 |1   |<br>
-     *                                  ----------------------------------------------------------------<br>
-     *                                 </code></pre>
+     * @param data     data to write to the table. <p><br>
+     *
      */
-    public <T> void insertTable(final int startRow, final int startCol, LinkedHashMap<String, String> headerPropertyMap, List<T> data) throws Exception {
-        this.tableStartRow = startRow;
-        this.tableStartCol = startCol;
-        List<String> names = new ArrayList<>(headerPropertyMap.keySet());
-        List<String> properties = new ArrayList<>(headerPropertyMap.values());
-        this.headerEndRow = startRow;
-        this.headers = createHeaders(this.sheet.createRow(startRow), startCol, names, properties);
+    public <T> POIUtils createTable(LinkedHashMap<String, String> headerMap, List<T> data) throws Exception {
+        List<String> names = new ArrayList<>(headerMap.keySet());
+        List<String> properties = new ArrayList<>(headerMap.values());
+        this.headerEndRow = tableStartRow;
+        this.headers = createHeaders(getOrCreateRow(tableStartRow), tableStartCol, names, properties, data.get(0).getClass());
         setParameters();
+        resetDataRows();
         createDataRows(data);
-        setStyle(startRow, startCol);
+        setHeaderStyle(tableStartRow, tableStartCol, headerEndRow, headerEndCol);
+        return this;
+    }
+
+    /**
+     * Create a table with the supplied headers and the corresponding columns of data. This is a reverse version of
+     * {@link #getColumns}.
+     *
+     * @param headers comma-separated header names of each column, with a number denoting the column index prepending
+     *                each name before a colon, e.g. "2:Name,3:Date of marriage,5:gender".
+     * @param columns a map with the column index as the key denoting the column of each list of values. If there are
+     *                more columns than headers then only the columns of the specified headers will be created.
+     */
+    public POIUtils createTable(String headers, Map<Integer, List<String>> columns, int tableStartRow) {
+        String[] headers2 = headers.split(",");
+        List<Integer> colIds = new ArrayList<>();
+        for (String header2 : headers2) {
+            String[] headers3 = header2.split(":");
+            int col = Integer.parseInt(headers3[0]);
+            writeValueToCell(headers3[1], tableStartRow, col);
+            colIds.add(col);
+        }
+        colIds.sort(Integer::compareTo);
+        List<Integer> sizes = columns.values().stream().map(List::size).sorted(Integer::compareTo).collect(Collectors.toList());
+        int rowId = tableStartRow + 1;
+        int maxRowId = sizes.get(sizes.size() - 1) + tableStartRow;
+        while (rowId <= maxRowId) {
+            int i = rowId - tableStartRow - 1;
+            for (Integer colId : colIds) {
+                if (i < columns.get(colId).size()) {
+                    writeValueToCell(columns.get(colId).get(i), rowId, colId);
+                }
+            }
+            rowId++;
+        }
+        setHeaderStyle(tableStartRow, colIds.get(0), tableStartRow, colIds.get(colIds.size() - 1));
+        return this;
+    }
+
+    /**
+     * Compare two columns and output the venn result. See {@link ListUtils#venn(List, List, Comparator)} for what is a
+     * venn result.
+     *
+     * @param headerRow  which row the headers of the columns to compare is
+     * @param startRow   which row the values of the columns to compare should start with
+     * @param col1       the first column
+     * @param col2       the second column
+     * @param ignoreCase whether to ignore case while comparing
+     */
+    public POIUtils venn(int headerRow, int startRow, int col1, int col2, boolean ignoreCase) {
+        Map<Integer, List<String>> columns = getColumns(startRow, col1, col2);
+        List<List<String>> lists = ListUtils.venn(columns.get(col1), columns.get(col2), ignoreCase ? String::compareToIgnoreCase : null);
+        columns.put(col2 + 1, lists.get(0));
+        columns.put(col2 + 2, lists.get(1));
+        columns.put(col2 + 3, lists.get(2));
+        String header1 = getCellValue(headerRow, col1);
+        String header2 = getCellValue(headerRow, col2);
+        return createTable(String.format("%d:Only in %s,%d:Common,%d:Only in %s",
+                col2 + 1, header1 == null ? "left" : header1, col2 + 2, col2 + 3, header2 == null ? "right" : header2),
+                columns, startRow == 0 ? startRow : startRow - 1);
     }
 
     /**
@@ -434,6 +472,28 @@ public class POIUtils {
         }
     }
 
+    /**
+     * Return data of the specified columns on working sheet. Empty cells wont' be included in the result.
+     *
+     * @param rowId  which row to start with
+     * @param colIds indexes of columns
+     * @return a map whose keys are the indexes of the columns
+     */
+    public Map<Integer, List<String>> getColumns(int rowId, int... colIds) {
+        Map<Integer, List<String>> cols = new HashMap<>();
+        for (int i = rowId; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            for (int j = 0; j < colIds.length; j++) {
+                int colId = colIds[j];
+                Cell cell = row.getCell(colId);
+                if (!isEmpty(cell)) {
+                    cols.computeIfAbsent(colId, k -> new ArrayList<>()).add(getCellValue(cell));
+                }
+            }
+        }
+        return cols;
+    }
+
     /* -----------------------------------------------------------------Getters */
     public int getHeaderEndRow() {
         return headerEndRow;
@@ -455,7 +515,7 @@ public class POIUtils {
         return allHeaders;
     }
 
-    public XSSFWorkbook getWorkbook() {
+    public Workbook getWorkbook() {
         return workbook;
     }
 
@@ -487,6 +547,10 @@ public class POIUtils {
         }
     }
 
+    public String getCellValue(int rowId, int colId) {
+        return Optional.of(sheet).map(s -> s.getRow(rowId)).map(r -> r.getCell(colId)).map(POIUtils::getCellValue).orElse(null);
+    }
+
     public static String getCellValue(Cell cell) {
         if (cell == null)
             return null;
@@ -497,8 +561,9 @@ public class POIUtils {
             case Cell.CELL_TYPE_STRING:
                 return cell.getStringCellValue();
             case Cell.CELL_TYPE_NUMERIC:
-                if (DateUtil.isCellDateFormatted(cell))
-                    return DATE_FORMAT.format(cell.getDateCellValue());
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    return COMMON_DATE_FORMATTER.format(cell.getDateCellValue());
+                }
                 return String.valueOf((int) cell.getNumericCellValue());
             case Cell.CELL_TYPE_BOOLEAN:
                 return String.valueOf(cell.getBooleanCellValue());
@@ -535,23 +600,24 @@ public class POIUtils {
      * @param properties the list of header properties, all of which are in the form "class.property"
      * @return the list of headers that have been created
      */
-    private List<Header> createHeaders(Row row, final int startCol, List<String> names, List<String> properties) throws NoSuchMethodException, ClassNotFoundException, NoSuchFieldException {
+    private List<Header> createHeaders(Row row, final int startCol, List<String> names, List<String> properties, Class<?> cls) throws NoSuchFieldException {
         List<Header> headers = new ArrayList<>();
-
         int rowNum = row.getRowNum();
         for (int i = 0; i < names.size(); i++) {
             Header header = new Header();
             String name = names.get(i);
-            String property = properties.get(i);
+            String field = properties.get(i);
 
             if (!name.contains(FIELD_DELIMITER)) {
                 int colIdx = startCol + i - subHeaderNums[rowNum];
                 Cell cell = row.createCell(colIdx);
                 cell.setCellValue(name);
                 header.setCell(cell);
-                if (!property.isEmpty()) {
-                    Method method = getMethod(property);
-                    header.setMethod(method);
+                if (!field.isEmpty()) {
+//                    Method method = getMethod(classMap, field);
+//                    header.setMethod(method);
+                    header.setField(cls.getDeclaredField(field));
+                    header.getField().setAccessible(true);
                 }
                 headers.add(header);
 
@@ -567,8 +633,9 @@ public class POIUtils {
                 int subHeaderNum = 0;
                 while (name.contains(FIELD_DELIMITER)) {
                     String nextName = Objects.requireNonNull(StringUtils.split(name, StringUtils.escape(FIELD_DELIMITER)))[1];
+                    String nextField = Objects.requireNonNull(StringUtils.split(field, StringUtils.escape(FIELD_DELIMITER)))[1];
                     nextNames.add(nextName);
-                    nextProperties.add(property);
+                    nextProperties.add(nextField);
 
                     if (nextNames.size() >= 2 && !nextNames.get(nextNames.size() - 2).contains(FIELD_DELIMITER) && nextName.contains(FIELD_DELIMITER)) {
                         subHeaderNum++;
@@ -577,7 +644,7 @@ public class POIUtils {
                     if (++i == names.size())
                         break;
                     name = names.get(i);
-                    property = properties.get(i);
+                    field = properties.get(i);
                 }
 
                 i--; //The next name and property after breaking the while loop won't be processed if not this since they have been taken out in the loop.
@@ -586,8 +653,7 @@ public class POIUtils {
                 int newStartCol = lastHeader.getCell().getColumnIndex();
 //                int newEndCol = newStartCol + nextNames.size() - 1 - subHeaderNum;
 
-
-                List<Header> subHeaders = createHeaders(nextRow, newStartCol, nextNames, nextProperties);
+                List<Header> subHeaders = createHeaders(nextRow, newStartCol, nextNames, nextProperties, lastHeader.getField().getType());
                 lastHeader.setSubHeaders(subHeaders);
 
 
@@ -613,23 +679,18 @@ public class POIUtils {
      * @param property should be like "ClassName.property"
      * @return
      */
-    private Method getMethod(String property) throws ClassNotFoundException, NoSuchMethodException {
-        String[] properties = property.split("\\.");
-        String className = beanPackage == null ? properties[0] : beanPackage.concat(".").concat(properties[0]);
-        String propertyName = properties[1];
+    private Method getMethod(Map<String, Class<?>> classMap, String property) throws NoSuchMethodException {
+        String[] splits = property.split("\\.");
+        String propertyName = splits[1];
         String methodName;
         if (Character.isLowerCase(propertyName.charAt(1))) {
             methodName = "get".concat(StringUtils.capitalize(propertyName));
         } else {
             methodName = "get".concat(propertyName); // For xFoo type of properties
         }
-        Method method = Class.forName(className).getMethod(methodName);
+//        Method method = Class.forName(className).getMethod(methodName);
+        Method method = classMap.get(splits[0]).getMethod(methodName);
         return method;
-    }
-
-    public static void main(String[] args) throws ClassNotFoundException, NoSuchMethodException {
-        Method method = Class.forName("GeneratorTest.LogData").getMethod("getLicense");
-        System.out.println(method);
     }
 
     private Row getNextRow(Row row) {
@@ -656,10 +717,9 @@ public class POIUtils {
 
     private <T> void createDataRows(List<T> data) throws InvocationTargetException, IllegalAccessException {
         for (int i = 0; i < data.size(); i++) {
-            Row row = sheet.createRow(headerEndRow + dataRows);
             T rowData = data.get(i);
             int temp = dataRows;
-            createDataRow(row, headers, rowData);
+            createDataRow(getOrCreateRow(headerEndRow + dataRows), headers, rowData);
             if (dataRows == temp) // dataRows may not be incremented if all list values of this rowData are 0 length.
                 dataRows++;
         }
@@ -668,12 +728,12 @@ public class POIUtils {
     private void createDataRow(Row row, List<Header> headers, Object data) throws InvocationTargetException, IllegalAccessException {
         for (Header header : headers) {
 //            System.out.println(header + ", " + data);
-            if (header.getMethod() == null) { //If a header has no associated method, it's either (1) a header merely used to group a list of subheaders, or (2) a header that temporarily has no value.
+            if (header.getField() == null) { //If a header has no associated method, it's either (1) a header merely used to group a list of subheaders, or (2) a header that temporarily has no value.
                 if (header.getSubHeaders() != null) //It's (1)
                     createDataRow(row, header.getSubHeaders(), data);
                 continue;
             }
-            Object value = header.getMethod().invoke(data);
+            Object value = header.getField().get(data);
             if (header.getSubHeaders() != null) {
                 if (value instanceof List) {
                     Row nextRow = row;
@@ -780,11 +840,14 @@ public class POIUtils {
             allHeaders.add(header);
     }
 
-    private void setStyle(int startRow, int startCol) {
-        mergeRowCells(startRow, headerEndRow, startCol, headerEndCol);
-        mergeColCells(startRow, headerEndRow, startCol, headerEndCol);
-        setAllBorders(startRow, headerEndRow, startCol, headerEndCol);
-        sheet.createFreezePane(0, headerEndRow + 1);
+    private void setHeaderStyle(int startRow, int startCol, int endRow, int endCol) {
+        mergeRowCells(startRow, endRow, startCol, endCol);
+        mergeColCells(startRow, endRow, startCol, endCol);
+        setAllBorders(startRow, endRow, startCol, endCol);
+        sheet.createFreezePane(0, endRow + 1);
+        for (int i = startCol; i <= endCol; i++) {
+            sheet.autoSizeColumn(i, true);
+        }
     }
 
     private void setAllBorders(int firstRow, int lastRow, int firstCol, int lastCol) {
@@ -844,5 +907,28 @@ public class POIUtils {
         return true;
     }
 
-//    --------------------------------------------------------------------------------------Private members
+    private Row getOrCreateRow(int rowIdx) {
+        Row row = this.sheet.getRow(rowIdx);
+        if (row == null) {
+            row = this.sheet.createRow(rowIdx);
+        }
+        return row;
+    }
+
+    /**
+     * Returns a LinkedHashMap of header name and field mappings
+     *
+     * @param fieldMap formatted as "Name:name,Gender:sex,...,Role:role,Role:Name:role.name,...", see
+     *                 {@link #createTable(LinkedHashMap, List)} for more details on this formatting
+     * @return a ordered map
+     */
+    private LinkedHashMap<String, String> getFieldMap(String fieldMap) {
+        LinkedHashMap<String, String> map = new LinkedHashMap<>();
+        String[] strings = fieldMap.split(",");
+        for (String s : strings) {
+            String[] temp = s.split(":");
+            map.put(temp[0], temp[1]);
+        }
+        return map;
+    }
 }

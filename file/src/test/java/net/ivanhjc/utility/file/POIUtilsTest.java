@@ -6,9 +6,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 
 /**
  * @author Ivan Huang on 2018/3/21
@@ -19,7 +17,6 @@ public class POIUtilsTest {
     public void insertTable() throws Exception {
         POIUtils pu = new POIUtils();
         pu.open();
-        pu.setBeanPackage("sample");
         LinkedHashMap<String, String> map = new LinkedHashMap<>();
         map.put("ID", "User.id");
         map.put("Username", "User.username");
@@ -70,8 +67,13 @@ public class POIUtilsTest {
 //            poiUtils.open("Sheet1");
             poiUtils.appendValuesToSheet(values);
             poiUtils.saveAs(dirPath, file.getName().substring(0, file.getName().length() - fileType.length()).concat("_out").concat(fileType));
-            poiUtils.save();
+            poiUtils.saveAs();
             poiUtils.closeToDiscard();
         }
+    }
+
+    @Test
+    public void venn() throws IOException {
+        new POIUtils().open("C:\\Users\\hwx1017616\\Downloads\\fields.xlsx", "Sheet1").venn(-1, 0, 0, 1, true).saveAs();
     }
 }
