@@ -8,17 +8,25 @@ import net.ivanhjc.utility.data.MapUtils;
 import net.ivanhjc.utility.model.bean.Person;
 import net.ivanhjc.utility.model.enums.RespCode;
 import net.ivanhjc.utility.model.enums.Season;
+import org.apache.commons.lang3.RandomUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Test;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static java.util.Comparator.comparing;
 
 /**
  * @author Ivan Huang on 2018/3/6
  */
 public class JavaTest {
+    private static final Logger LOG = LogManager.getLogger();
 
     @Test
     public void nullTest() {
@@ -178,5 +186,50 @@ public class JavaTest {
     private int[] getAbs(int[] n) {
         System.out.println(n);
         return n;
+    }
+
+    @Test
+    public void isSamePerson() throws InterruptedException {
+        Person[] people = {new Person(1, "a"), new Person(2, "a"), new Person(1, "b"), new Person(3, "a"), new Person(4, "a")};
+        Arrays.stream(people)
+                .filter((person) -> person.getAge() > 30)
+                .sorted(comparing(Person::getAge).reversed())
+                .map(new Function<Person, Object>() {
+                    @Override
+                    public Object apply(Person person) {
+                        return person.getFirstName();
+                    }
+                })
+                .collect(Collectors.toList());
+
+        Thread[] threads = new Thread[100];
+        List<String> result = new ArrayList<>();
+        AtomicInteger count = new AtomicInteger(0);
+        for (int i = 0; i < threads.length; i++) {
+            threads[i] = new Thread(() -> {
+                Person person1 = people[RandomUtils.nextInt(0, people.length)];
+                Person person2 = people[RandomUtils.nextInt(0, people.length)];
+                result.add(person1.getId() + "," + person2.getId() + "," + person1.isSamePerson(person2));
+                LOG.info("Thread " + count.incrementAndGet() + " done");
+            });
+        }
+        Arrays.stream(threads).forEach(Thread::start);
+        while (count.get() < threads.length) {
+            Thread.sleep(1000);
+        }
+        int size1 = 0;
+        for (String s : result) {
+            size1++;
+        }
+
+        LOG.info("result size: {}", result.size()); // May contain null values
+        LOG.info("result size1: {}", size1);
+        LOG.info("result size2: {}", result.stream().count());
+        LOG.info("mistakes: ");
+        result.stream().filter(s -> {
+            String[] temp = s.split(",");
+            return temp[0].equals(temp[1]) != Boolean.parseBoolean(temp[2]);
+        }).forEach(LOG::info);
+        LOG.info("Done!");
     }
 }

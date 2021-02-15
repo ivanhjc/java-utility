@@ -8,7 +8,7 @@ import net.ivanhjc.utility.data.StringUtils;
 import net.ivanhjc.utility.file.FileUtils;
 import net.ivanhjc.utility.file.POIUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.commons.text.WordUtils;
+import org.apache.commons.text.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.ss.usermodel.Row;
@@ -24,7 +24,6 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.math.BigDecimal;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
@@ -942,7 +941,7 @@ public class Coder {
         StringBuilder setters = new StringBuilder();
         for (int i = 0; i < columns.size(); i++) {
             ColumnInfo column = columns.get(i);
-            String value = DataTypeMap.valueOf(column.getType()).value;
+            String value = SQLDataTypes.valueOf(column.getType()).DEFAULT_VALUE;
             String comment = getComment(column);
             setters.append(String.format("    %1$s.set%2$s(%4$s); %3$s%n",
                     varName, org.apache.commons.lang3.StringUtils.capitalize(column.getVarName()), comment, value));
@@ -1648,87 +1647,6 @@ public class Coder {
     }
 
     /**
-     * Returns a sample object of the supplied type, which may be common Java types such as String, Integer and array
-     * types, or a POJO class. The POJO class may or may not contain getter and setter methods.
-     *
-     * @param type the template type out of which the sample object is created
-     */
-    public static <T> T sample(Class<T> type) throws IllegalAccessException, InstantiationException, ClassNotFoundException {
-        switch (type.getSimpleName()) {
-            case "Object":
-            case "String":
-                return type.cast("sample");
-            case "Integer":
-                return type.cast(1);
-            case "Long":
-                return type.cast(1L);
-            case "Float":
-                return type.cast(0.1f);
-            case "Double":
-                return type.cast(0.1);
-            case "Date":
-                return type.cast(new Date());
-            case "Boolean":
-                return type.cast(false);
-            case "BigDecimal":
-                return type.cast(BigDecimal.valueOf(0.1));
-            default:
-                if (type.isArray()) {
-                    Object array = Array.newInstance(type.getComponentType(), 2);
-                    Object val = sample(type.getComponentType()); // TODO: 5/21/19 Primitive types
-                    Array.set(array, 0, val);
-                    Array.set(array, 1, val);
-                    return type.cast(array);
-                }
-        }
-
-        T obj = type.newInstance();
-        Field[] fields = type.getDeclaredFields();
-        for (Field field : fields) {
-            field.setAccessible(true);
-            Object arg;
-            switch (field.getType().getSimpleName()) {
-                case "List":
-                    String componentType = org.apache.commons.lang3.StringUtils.substringBetween(field.getGenericType().getTypeName(), "<", ">");
-                    Object val;
-                    if (componentType != null) {
-                        Class<?> componentTypeClass = type.getClassLoader().loadClass(componentType);
-                        val = sample(componentTypeClass);
-                    } else {
-                        val = sample(String.class);
-                    }
-                    arg = new ArrayList<>(Arrays.asList(val, val));
-                    break;
-                case "Map":
-                    String componentTypes = org.apache.commons.lang3.StringUtils.substringBetween(field.getGenericType().getTypeName(), "<", ">");
-                    Map map = new HashMap();
-                    Class<?> keyType, valueType;
-                    if (componentTypes != null) {
-                        String[] types = StringUtils.splitAndTrim(componentTypes, ",", SplitRegex.DROPPED);
-                        keyType = type.getClassLoader().loadClass(types[0]);
-                        valueType = type.getClassLoader().loadClass(types[1]);
-                    } else {
-                        keyType = String.class;
-                        valueType = String.class;
-                    }
-                    map.put(sample(keyType), sample(valueType));
-                    arg = map;
-                    break;
-                default:
-                    arg = sample(field.getType());
-            }
-
-            try {
-                field.set(obj, arg);
-            } catch (IllegalArgumentException e) {
-                LOG.error(e.getMessage() + ", field: " + field.getGenericType().getTypeName() + " " + field.getName() + ", arg: " + arg.getClass().getName() + " " + arg.toString());
-                throw e;
-            }
-        }
-        return obj;
-    }
-
-    /**
      * Load a sample object out of a designated .class file.
      *
      * @param classPath the directory containing the .class file, e.g. "/home/user/downloads/classes/".
@@ -1737,6 +1655,87 @@ public class Coder {
      */
     public static Object sample(String classPath, String className) throws Exception {
         return sample(getClass(classPath, className));
+    }
+
+    /**
+     * Return a sample object of the supplied type, which may be common Java types such as String, Integer and array
+     * types, or a POJO class. The POJO class may or may not contain getter and setter methods.
+     *
+     * @param type the template type out of which the sample object is created
+     */
+    public static <T> Object sample(Class<T> type) {
+        Class typeKey = type == int.class ? Integer.class
+                : type == long.class ? Long.class
+                : type == float.class ? Float.class
+                : type == double.class ? Double.class
+                : type == boolean.class ? Boolean.class
+                : type == Object.class ? String.class
+                : type;
+        RandomGenerator randomGenerator = RandomGenerators.TYPE_GENERATOR_MAP.get(typeKey);
+        if (randomGenerator != null) {
+            return randomGenerator.generate();
+        }
+
+        if (type.isArray()) {
+            Object array = Array.newInstance(type.getComponentType(), 2);
+            Object val = sample(type.getComponentType());
+            Array.set(array, 0, val);
+            Array.set(array, 1, val);
+            return array;
+        }
+
+        try {
+            T obj = type.newInstance();
+            Field[] fields = type.getDeclaredFields();
+            for (Field field : fields) {
+                field.setAccessible(true);
+                Object value;
+                switch (field.getType().getSimpleName()) {
+                    case "List":
+                        String componentType = StringUtils.substringBetween(field.getGenericType().getTypeName(), "<", ">");
+                        Object val;
+                        if (componentType != null) {
+                            Class<?> componentTypeClass = type.getClassLoader().loadClass(componentType);
+                            val = sample(componentTypeClass);
+                        } else {
+                            val = sample(String.class);
+                        }
+                        value = new ArrayList<>(Arrays.asList(val, val));
+                        break;
+                    case "Map":
+                        String componentTypes = StringUtils.substringBetween(field.getGenericType().getTypeName(), "<", ">");
+                        Map map = new HashMap();
+                        Class<?> keyType, valueType;
+                        if (componentTypes != null) {
+                            String[] types = StringUtils.splitAndTrim(componentTypes, ",", SplitRegex.DROPPED);
+                            keyType = type.getClassLoader().loadClass(types[0]);
+                            valueType = type.getClassLoader().loadClass(types[1]);
+                        } else {
+                            keyType = String.class;
+                            valueType = String.class;
+                        }
+                        map.put(sample(keyType), sample(valueType));
+                        value = map;
+                        break;
+                    default:
+                        value = sample(field.getType());
+                }
+
+                field.set(obj, value);
+            }
+            return obj;
+        } catch (Exception e) {
+            LOG.error(e);
+            return null;
+        }
+    }
+
+    public static <T> List<T> sampleList(Class<T> type, int size) {
+        List<T> list = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            list.add(type.cast(sample(type)));
+        }
+        return list;
     }
 
     public static Class getClass(String classPath, String className) throws Exception {

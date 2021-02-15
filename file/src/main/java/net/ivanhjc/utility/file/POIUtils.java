@@ -4,6 +4,7 @@ import net.ivanhjc.utility.data.ListUtils;
 import net.ivanhjc.utility.data.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.apache.poi.poifs.crypt.Decryptor;
 import org.apache.poi.poifs.crypt.EncryptionInfo;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
@@ -483,8 +484,7 @@ public class POIUtils {
         Map<Integer, List<String>> cols = new HashMap<>();
         for (int i = rowId; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
-            for (int j = 0; j < colIds.length; j++) {
-                int colId = colIds[j];
+            for (int colId : colIds) {
                 Cell cell = row.getCell(colId);
                 if (!isEmpty(cell)) {
                     cols.computeIfAbsent(colId, k -> new ArrayList<>()).add(getCellValue(cell));
@@ -519,6 +519,10 @@ public class POIUtils {
         return workbook;
     }
 
+    public Sheet getSheet() {
+        return sheet;
+    }
+
     /* -----------------------------------------------------------------Utilities */
 
     /**
@@ -547,6 +551,10 @@ public class POIUtils {
         }
     }
 
+    public Cell getCell(int rowId, int colId) {
+        return Optional.of(sheet).map(s -> s.getRow(rowId)).map(r -> r.getCell(colId)).orElse(null);
+    }
+
     public String getCellValue(int rowId, int colId) {
         return Optional.of(sheet).map(s -> s.getRow(rowId)).map(r -> r.getCell(colId)).map(POIUtils::getCellValue).orElse(null);
     }
@@ -564,7 +572,7 @@ public class POIUtils {
                 if (DateUtil.isCellDateFormatted(cell)) {
                     return COMMON_DATE_FORMATTER.format(cell.getDateCellValue());
                 }
-                return String.valueOf((int) cell.getNumericCellValue());
+                return String.valueOf(cell.getNumericCellValue());
             case Cell.CELL_TYPE_BOOLEAN:
                 return String.valueOf(cell.getBooleanCellValue());
             default:

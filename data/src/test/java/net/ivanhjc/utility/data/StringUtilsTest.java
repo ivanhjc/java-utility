@@ -3,12 +3,16 @@ package net.ivanhjc.utility.data;
 import net.ivanhjc.utility.model.TokenInfo;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.math3.util.MathUtils;
 import org.junit.Test;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author Ivan Huang on 2017/6/27
@@ -21,42 +25,6 @@ public class StringUtilsTest {
     private String[] testStrs2 = {null, "", "20", "20.5", "20L", "0x20", "ABC"};
     private String[] testStrs3 = {null, "", "1234", "abcd", "ABCD", "1F6AD", "FGXY", "0x12FD", "0X", "0x24F", "0X3D6F"};
     private String[] testStrs4 = {null, "", "  1,  2,  3 , 4", ",1,2,3,", "bird,cat,dog", "\\u9000\\u62BC\\u91D1", "\\u9001\\uABXY\\u91D2", "你好", "≤"};
-
-    @Test
-    public void test() {
-        Base obj = new A();
-        obj.a();
-        obj.b();
-        obj.a();
-    }
-
-    interface Base {
-        default void a() {
-            System.out.println("a");
-        }
-
-        void b();
-
-        void c(Base list);
-    }
-
-    class A implements Base {
-
-        /*@Override
-        public void a() {
-            System.out.println("a1");
-        }*/
-
-        @Override
-        public void b() {
-            System.out.println("b1");
-        }
-
-        @Override
-        public void c(Base list) {
-
-        }
-    }
 
     @Test
     public void capitalize() {
@@ -243,10 +211,13 @@ public class StringUtilsTest {
             String[] row = new String[RandomUtils.nextInt(1, 10)];
             for (int j = 0; j < row.length; j++) {
                 row[j] = RandomStringUtils.random(RandomUtils.nextInt(1, 10), true, true);
+                if (random(5).contains(j)) {
+                    row[j] = "测试";
+                }
             }
             table[i] = row;
         }
-        System.out.println(StringUtils.formatTable(table, null, null, 5));
+        System.out.println(StringUtils.formatTable(table, null, null, 2, true));
     }
 
     @Test
@@ -295,5 +266,13 @@ public class StringUtilsTest {
     public void indexOfFirstNonBlankChar() {
         System.out.println(StringUtils.indexOfFirstNonBlankChar(""));
         System.out.println(StringUtils.indexOfFirstNonBlankChar("   - hello"));
+    }
+
+    private List<Integer> random(int size) {
+        List<Integer> list = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            list.add(RandomUtils.nextInt(1, 10));
+        }
+        return list;
     }
 }

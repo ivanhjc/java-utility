@@ -1,21 +1,27 @@
 package net.ivanhjc.utility.auto;
 
 import net.ivanhjc.utility.auto.enums.CustomColumnType;
-import net.ivanhjc.utility.auto.enums.DataTypeMap;
+import net.ivanhjc.utility.auto.enums.SQLDataTypes;
 import net.ivanhjc.utility.auto.enums.MyBatisToken;
+import net.ivanhjc.utility.auto.enums.RandomGenerators;
 import net.ivanhjc.utility.data.ListUtils;
 import net.ivanhjc.utility.data.StringUtils;
+import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.text.RandomStringGenerator;
 
 import java.util.Objects;
 
 public class ColumnInfo {
     private String name;
     private String type;
-    private String isNullable;
+    private Long characterMaximumLength;
+    private Boolean isNullable;
     private String key;
     private String comment;
     private String varName; //the variable name as used in Java
     private String varType; //the variable type as used in Java
+    private Class javaType;
+    private RandomGenerator randomGenerator;
 
     public String getName() {
         return name;
@@ -33,12 +39,20 @@ public class ColumnInfo {
         this.type = type;
     }
 
-    public String getIsNullable() {
+    public Long getCharacterMaximumLength() {
+        return characterMaximumLength;
+    }
+
+    public void setCharacterMaximumLength(Long characterMaximumLength) {
+        this.characterMaximumLength = characterMaximumLength;
+    }
+
+    public Boolean isNullable() {
         return isNullable;
     }
 
-    public void setIsNullable(String isNullable) {
-        this.isNullable = isNullable;
+    public void setNullable(Boolean nullable) {
+        isNullable = nullable;
     }
 
     public String getKey() {
@@ -73,12 +87,20 @@ public class ColumnInfo {
         this.varType = varType;
     }
 
+    public Class getJavaType() {
+        return javaType;
+    }
+
+    public void setJavaType(Class javaType) {
+        this.javaType = javaType;
+    }
+
     public String getVarNameCap() {
         return StringUtils.capitalize(varName);
     }
 
     public String getField(String colPrefix) {
-        return DataTypeMap.isDate(type) ? "DATE_FORMAT(" + colPrefix.concat(name) + ", '%Y-%m-%d %H:%i:%s') AS " + varName :
+        return SQLDataTypes.isDate(type) ? "DATE_FORMAT(" + colPrefix.concat(name) + ", '%Y-%m-%d %H:%i:%s') AS " + varName :
                 Objects.equals(name, varName) ? colPrefix.concat(name) : colPrefix.concat(name) + " AS " + varName;
     }
 
@@ -151,5 +173,33 @@ public class ColumnInfo {
 
     public String getTestSnippetForInsertOrUpdateList() {
         return String.format("%3$12s%2$s = values(%2$s)\n", varName, name, "");
+    }
+
+    public RandomGenerator getRandomGenerator() {
+        if (randomGenerator == null) {
+            randomGenerator = () -> {
+                boolean generate = !isNullable || Math.random() > 0.2;
+                if (generate) {
+                    if (javaType == String.class) {
+                        RandomStringGenerator generator;
+                        if (comment.contains("multi-lang")) {
+                            generator = RandomGenerators.RANDOM_STRING_ALPHA_NUMERAL_AND_OTHER_SPECIFIED_IN_FILE_GENERATOR;
+                        } else {
+                            generator = new RandomStringGenerator.Builder()
+                                    .withinRange(new char[]{'0', '9'}, new char[]{'A', 'z'})
+                                    .build();
+                        }
+                        return generator.generate(1, characterMaximumLength.intValue());
+                    }
+                    return RandomGenerators.TYPE_GENERATOR_MAP.get(javaType).generate();
+                }
+                return null;
+            };
+        }
+        return randomGenerator;
+    }
+
+    public void setRandomGenerator(RandomGenerator randomGenerator) {
+        this.randomGenerator = randomGenerator;
     }
 }

@@ -3,12 +3,15 @@ package net.ivanhjc.utility.data;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.commons.lang3.CharUtils;
 
 import java.net.URL;
+import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * @author Ivan Huang on 2017/6/27
@@ -18,7 +21,6 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
     public static final Gson GSON_UPPER = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE).create();
     public static final Gson GSON_NULL = new GsonBuilder().serializeNulls().create();
     public static final Gson GSON_SNAKE = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
-    public static final Gson JSON_PRETTY = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
 
     /**
      * Converts a string to capitalized form with all other letters unchanged. A null or empty input returns as is.
@@ -45,7 +47,7 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
     }
 
     /**
-     * Converts a string to capitalized form with all other letters to lowercase, e.g. hello, hELlo -> Hello
+     * Convert a string to capitalized form with all other letters to lowercase, e.g. hello, hELlo -> Hello
      *
      * @param str the string to convert, may be null or empty, returns as is in these cases
      * @see Character#isTitleCase(char)
@@ -89,9 +91,6 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
         if (str == null || str.trim().isEmpty())
             return str;
 
-        if (isLettersAndDigits(str))
-            return capitalize(str);
-
         String[] parts = str.split("_");
         StringBuilder builder = new StringBuilder();
         for (String part : parts) {
@@ -109,9 +108,9 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
     }
 
     /**
-     * Checks if a string contains only letters and digits
+     * Check if a string contains only letters and digits
      *
-     * @param str the string to check, may be null or empty, returns false in such cases
+     * @param str The string to check. It may be null or empty and false is returned in these cases.
      */
     public static boolean isLettersAndDigits(String str) {
         if (str == null || str.trim().isEmpty())
@@ -310,7 +309,7 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
     }
 
     /**
-     * Converts a string of Unicode code points to readable characters. Is error-tolerated, which means
+     * Convert a string of Unicode code points to readable characters. Is error-tolerated, which means
      * inconvertible code points are reserved as is.
      *
      * @param codePoints e.g. "\u9000\u62BC\u91D1\u5931\u8D25\u901A\u77E5", can't be null or empty.
@@ -349,7 +348,7 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
     }
 
     /**
-     * Converts a string to a sequence of Unicode code points
+     * Convert a string to a sequence of Unicode code points
      *
      * @param str the string to convert, can't be null or empty
      * @return the converted string
@@ -364,22 +363,48 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
     }
 
     /**
-     * Formats a 2D array like a table with fixed width columns
+     * Formats a {@link java.sql.ResultSet} object like a table
      *
-     * @param table  the string to be formatted. Before formatting it should contain multiple lines each of which represents a row of the table
-     *               and has multiple cells separated with a certain type of delimiter such as space " ", comma ",", tab "\t", or vertical line
-     *               "|" etc. For example, the following strings are formattable:
-     *               <p>
-     *               "id,name,age,sex\n" +
-     *               "1,Bob,12,M\n" +
-     *               "2,Alice,8,F\n"
-     * @param colNum the number of columns of the target table, if null each row can have different number of columns
-     * @param oldDel the delimiter used to separate columns of the original table
-     * @param newDel the delimiter used to separate columns of the new table, if null an empty string will be used as the new delimiter
-     * @param margin the number of spaces between columns of the new table
-     * @return the formatted body of the string
+     * @param resultSet the data to format
+     * @return the formatted string
      */
-    public static StringBuilder formatTable(List<String> table, Integer colNum, String oldDel, String newDel, int margin) {
+    public static String formatTable(ResultSet resultSet) throws SQLException {
+        resultSet.last();
+        int rowNum = resultSet.getRow();
+        String[][] table = new String[rowNum + 1][];
+        resultSet.beforeFirst();
+        ResultSetMetaData rsmd = resultSet.getMetaData();
+        int colNum = rsmd.getColumnCount();
+        String[] headers = new String[colNum];
+        for (int i = 1; i <= colNum; i++) {
+            headers[i - 1] = rsmd.getColumnName(i);
+        }
+        table[0] = headers;
+
+        int rowIdx = 1;
+        while (resultSet.next()) {
+            String[] row = new String[colNum];
+            for (int i = 1; i <= colNum; i++) {
+                row[i - 1] = String.valueOf(resultSet.getObject(i));
+            }
+            table[rowIdx++] = row;
+        }
+        return formatTable(table, colNum, null, 2, true);
+    }
+
+    /**
+     * Format a 2D array into a table with fixed-width columns
+     *
+     * @param table  The string to be formatted. Before formatting it should contain multiple lines each of which represents a row of the table
+     *               and has multiple cells separated with a certain type of delimiter such as space " ", comma ",", tab "\t", or vertical line
+     *               "|" etc. For example, the following strings are formattable: {@code "id,name,age,sex\n1,Bob,12,M\n2,Alice,8,F\n"}
+     * @param colNum The number of columns of the target table, if null each row can have different number of columns
+     * @param oldDel The delimiter used to separate columns of the original table
+     * @param newDel The delimiter used to separate columns of the new table, if null an empty string will be used as the new delimiter
+     * @param margin The number of spaces between columns of the new table
+     * @return The formatted table string
+     */
+    public static String formatTable(List<String> table, Integer colNum, String oldDel, String newDel, int margin) {
         String[][] tab = new String[table.size()][];
         for (int i = 0; i < table.size(); i++) {
             String line = table.get(i);
@@ -392,64 +417,74 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
             }
             tab[i] = row;
         }
-        return formatTable(tab, colNum, newDel, margin);
+        return formatTable(tab, colNum, newDel, margin, true);
     }
 
     /**
-     * Formats a 2D array like a table with fixed width columns
+     * Formats a 2D array into a table with fixed-width columns.
      *
-     * @param table  the 2-dimensional array to be formatted
-     * @param colNum the number of columns of the target table, if null each row can have different number of columns
-     * @param newDel the delimiter used to separate columns of the new table, if null an empty string will be used as the new delimiter
-     * @param margin the number of spaces between columns of the new table
-     * @return the formatted body of the string
+     * @param table     The 2-dimensional array to be formatted
+     * @param colNum    The number of columns of the target table, if null each row can have different number of columns
+     * @param delimiter The delimiter used to separate columns of the new table, if null an empty string will be used
+     *                  as the new delimiter
+     * @param margin    The number of spaces between columns of the new table
+     * @param ideo      Whether or not consider ideographic characters when calculating the width of each field.
+     *                  True so that ideographic characters won't break the fix-width alignment. This does not guarantee
+     *                  each field of the same column has exactly the same display width since this also depends on the
+     *                  fonts in use. If a field contains ideographic characters then the width of the field is its
+     *                  length plus the number of spaces produced by subtracting the count of ideographic characters
+     *                  from the maximum length of the column because each ideographic character takes up (approximately)
+     *                  two spaces.
+     * @return The formatted table as a StringBuilder object
      */
-    public static StringBuilder formatTable(String[][] table, Integer colNum, String newDel, int margin) {
-        List<Integer> pad = new ArrayList<>();
-        List<String> formats = new ArrayList<>();
+    public static String formatTable(String[][] table, Integer colNum, String delimiter, int margin, boolean ideo) {
+        List<Integer> colMaxWidths = new ArrayList<>();
         for (String[] row : table) {
             for (int i = 0; i < row.length; i++) {
                 int width = row[i].length();
-                if (pad.size() < i + 1) {
-                    pad.add(width);
-                    formats.add("%-" + width + "s");
-                } else if (pad.get(i) < width) {
-                    pad.set(i, width);
-                    formats.set(i, "%-" + width + "s");
+                if (colMaxWidths.size() < i + 1) {
+                    colMaxWidths.add(width);
+                } else if (colMaxWidths.get(i) < width) {
+                    colMaxWidths.set(i, width);
                 }
             }
         }
 
-        StringBuilder builder = new StringBuilder();
-        String fieldStart = newDel == null || newDel.isEmpty() ? "" : newDel + " ";
-        String m = String.format("%" + margin + "s", "");
+        StringBuilder result = new StringBuilder();
+        String colDelimiter = StringUtils.isBlank(delimiter) ? "" : delimiter + " ";
+        String margin1 = margin == 0 ? "" : String.format("%" + margin + "s", "");
         if (colNum == null) {
             for (String[] row : table) {
-                builder.append(fieldStart);
+                result.append(colDelimiter);
                 for (int i = 0; i < row.length - 1; i++) {
-                    builder.append(String.format(formats.get(i), row[i])).append(m).append(fieldStart);
+                    int width = !ideo ? colMaxWidths.get(i) : (colMaxWidths.get(i) - getIdeogramCount(row[i]));
+                    result.append(String.format("%-" + (width == 0 ? 1 : width) + "s", row[i])).append(margin1).append(colDelimiter);
                 }
-                builder.append(row[row.length - 1]).append("\n");
+                result.append(row[row.length - 1]).append("\n");
             }
         } else {
             for (String[] row : table) {
-                builder.append(fieldStart);
+                result.append(colDelimiter);
                 for (int i = 0; i < colNum; i++) {
                     if (i < colNum - 1) {
                         String field = i >= row.length ? "" : row[i];
-                        builder.append(String.format(formats.get(i), field)).append(m).append(fieldStart);
+                        int width = !ideo ? colMaxWidths.get(i) : (colMaxWidths.get(i) - getIdeogramCount(field));
+                        result.append(String.format("%-" + (width == 0 ? 1 : width) + "s", field)).append(margin1).append(colDelimiter);
                     } else {
-                        StringBuilder temp = new StringBuilder();
+                        StringBuilder rest = new StringBuilder();
                         for (int j = i; j < row.length; j++) {
-                            temp.append(row[j]);
+                            rest.append(row[j]);
                         }
-                        builder.append(temp).append("\n");
+                        result.append(rest).append("\n");
                     }
                 }
             }
         }
+        return result.toString();
+    }
 
-        return builder;
+    public static int getIdeogramCount(String str) {
+        return (int) str.codePoints().filter(Character::isIdeographic).count();
     }
 
     /**
@@ -490,38 +525,7 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
                 lines.set(i, line.substring(1));
             }
         }
-        StringBuilder table = formatTable(lines, colNum, delimiter, "|", 1).insert(0, "|===\n").append("|===\n");
-        return table.toString();
-    }
-
-    /**
-     * Formats a {@link java.sql.ResultSet} object like a table
-     *
-     * @param resultSet the data to format
-     * @return the formatted string
-     */
-    public static String formatTable(ResultSet resultSet) throws SQLException {
-        resultSet.last();
-        int rowNum = resultSet.getRow();
-        String[][] table = new String[rowNum + 1][];
-        resultSet.beforeFirst();
-        ResultSetMetaData rsmd = resultSet.getMetaData();
-        int colNum = rsmd.getColumnCount();
-        String[] headers = new String[colNum];
-        for (int i = 1; i <= colNum; i++) {
-            headers[i - 1] = rsmd.getColumnName(i);
-        }
-        table[0] = headers;
-
-        int rowIdx = 1;
-        while (resultSet.next()) {
-            String[] row = new String[colNum];
-            for (int i = 1; i <= colNum; i++) {
-                row[i - 1] = String.valueOf(resultSet.getObject(i));
-            }
-            table[rowIdx++] = row;
-        }
-        return formatTable(table, colNum, null, 1).toString();
+        return "|===\n" + formatTable(lines, colNum, delimiter, "|", 1) + "|===\n";
     }
 
     /**

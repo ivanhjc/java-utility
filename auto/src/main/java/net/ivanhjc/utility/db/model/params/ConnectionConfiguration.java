@@ -2,22 +2,21 @@ package net.ivanhjc.utility.db.model.params;
 
 public class ConnectionConfiguration {
     /**
-     * Name of the connection
+     * A user-provided name of the connection, which can be used to identify which connection to use.
      */
     private String name;
+    /**
+     * JDBC url
+     */
     private String url;
+    /**
+     * Database connection username
+     */
     private String username;
+    /**
+     * Database connection password
+     */
     private String password;
-
-    public ConnectionConfiguration() {
-    }
-
-    public ConnectionConfiguration(String name, String url, String username, String password) {
-        this.name = name;
-        this.url = url;
-        this.username = username;
-        this.password = password;
-    }
 
     public String getName() {
         return name;

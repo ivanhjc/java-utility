@@ -1,11 +1,15 @@
 package net.ivanhjc.utility.file;
 
+import net.ivanhjc.utility.data.NumberUtils;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.util.LinkedHashMap;
 
 /**
@@ -75,5 +79,14 @@ public class POIUtilsTest {
     @Test
     public void venn() throws IOException {
         new POIUtils().open("C:\\Users\\hwx1017616\\Downloads\\fields.xlsx", "Sheet1").venn(-1, 0, 0, 1, true).saveAs();
+    }
+
+    @Test
+    public void getCellValue() throws IOException {
+        ZipSecureFile.setMinInflateRatio(0);
+        POIUtils poiUtils = new POIUtils().open("D:\\projects\\java-utility\\auto\\target\\output_20210213184248.xlsx", "Sheet1");
+        String v = poiUtils.getCellValue(1, 0);
+        System.out.println(v);
+        System.out.println(poiUtils.getCell(1, 0).getNumericCellValue());
     }
 }

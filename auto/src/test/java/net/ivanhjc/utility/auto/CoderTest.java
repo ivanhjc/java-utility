@@ -2,6 +2,7 @@ package net.ivanhjc.utility.auto;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.sun.codemodel.JCodeModel;
 import net.ivanhjc.utility.auto.enums.ColumnsOption;
 import net.ivanhjc.utility.auto.enums.CreateType;
@@ -11,6 +12,7 @@ import net.ivanhjc.utility.file.POIUtils;
 
 import net.ivanhjc.utility.model.User;
 import net.ivanhjc.utility.model.bean.Person;
+import org.apache.commons.lang3.RandomUtils;
 import org.jsonschema2pojo.*;
 import org.jsonschema2pojo.rules.RuleFactory;
 import org.junit.Test;
@@ -21,6 +23,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -29,6 +32,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -36,7 +40,7 @@ import java.util.function.Consumer;
  * @author Ivan Huang on 2018/2/27
  */
 public class CoderTest {
-
+    public static final Gson GSON = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
     private Coder coder;
 
     public CoderTest() throws SQLException, ClassNotFoundException {
@@ -218,13 +222,14 @@ public class CoderTest {
 //        System.out.println(Coder.sample(Integer.class));
 //        System.out.println(StringUtils.GSON_NULL.toJson(Coder.sample(User.class)));
 //
-        System.out.println(new Gson().toJson(Coder.sample("/home/ivanhjc/Projects/car-hailing/car-hailing-model/target/classes/", "com.winsky.carhailing.model.bo.common.SystemConfigStandardLimitConfig")));
+//        System.out.println(new Gson().toJson(Coder.sample("/home/ivanhjc/Projects/car-hailing/car-hailing-model/target/classes/", "com.winsky.carhailing.model.bo.common.SystemConfigStandardLimitConfig")));
 //        System.out.println(Coder.snippetBeanSetters(Coder.getClass("/home/ivanhjc/Projects/car-hailing/car-hailing-model/target/classes/", "com.winsky.carhailing.model.entity.OrderMonitorEntity"), "bean"));
 //        System.out.println(StringUtils.GSON_NULL.toJson(Coder.sample(Car.class)));
-//        System.out.println(StringUtils.GSON_NULL.toJson(Coder.sample(User[].class)));
-//        System.out.println(StringUtils.GSON_NULL.toJson(Coder.sample(int[].class)));
+//        System.out.println(GSON.toJson(Coder.sample(User[].class)));
+//        System.out.println(GSON.toJson(Coder.sample(int[].class)));
 //        System.out.println(StringUtils.GSON_NULL.toJson(Coder.sample(Map.class)));
 //        System.out.println(new Gson().toJson(Coder.sample(Person.class)));
+//        System.out.println(Coder.sampleList(int.class, 10));
     }
 
     // TODO: 5/21/19 Load class problem, Bean class problem
@@ -248,7 +253,6 @@ public class CoderTest {
         poiUtils.open();
 
         LinkedHashMap<String, String> map = new LinkedHashMap<>();
-        poiUtils.setBeanPackage("sample");
         map.put("ID", "LogData.carId");
         map.put("车牌", "LogData.license");
         map.put("车型", "LogData.model");
@@ -287,12 +291,6 @@ public class CoderTest {
         poiUtils.insertTable(map, data);
         poiUtils.save();*/
 //        coder.getConnection();
-    }
-
-    public static class CarInfo {
-        public BigInteger id;
-        public String license;
-        public String model;
     }
 
     /*public static class LogData {
@@ -365,12 +363,6 @@ public class CoderTest {
             this.carId = carId;
         }
     }*/
-
-    @Test
-    public void selectList() throws SQLException, ClassNotFoundException, IllegalAccessException, NoSuchFieldException, InstantiationException {
-        List<CarInfo> cars = new Coder().selectList("SELECT tc.id, tc.number, tcm.name FROM t_car tc LEFT JOIN t_car_model tcm ON tcm.id = tc.model_id WHERE tc.id IN (1,2,3)", CarInfo.class, ImmutableMap.of("id", "id", "license", "number", "model", "name"));
-        System.out.println(StringUtils.GSON_NULL.toJson(cars));
-    }
 
     public static void main(String[] args) throws Exception {
 //        loadClass(LogData.class);

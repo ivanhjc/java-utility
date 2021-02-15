@@ -5,6 +5,15 @@ public class DBTableLocator {
     private String schema;
     private String table;
 
+    public DBTableLocator() {
+    }
+
+    public DBTableLocator(String connection, String schema, String table) {
+        this.connection = connection;
+        this.schema = schema;
+        this.table = table;
+    }
+
     public String getConnection() {
         return connection;
     }
