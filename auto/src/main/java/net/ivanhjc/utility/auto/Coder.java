@@ -7,6 +7,7 @@ import net.ivanhjc.utility.data.SplitRegex;
 import net.ivanhjc.utility.data.StringUtils;
 import net.ivanhjc.utility.file.FileUtils;
 import net.ivanhjc.utility.file.POIUtils;
+import net.ivanhjc.utility.reflection.ReflectionUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.text.*;
 import org.apache.logging.log4j.LogManager;
@@ -1647,130 +1648,6 @@ public class Coder {
     }
 
     /**
-     * Load a sample object out of a designated .class file.
-     *
-     * @param classPath the directory containing the .class file, e.g. "/home/user/downloads/classes/".
-     * @param className the full name of the class, e.g. "com.company.Customer", and the "Customer.class" file should be put under "/home/user/downloads/classes/com/company/".
-     * @return an object populated with sample values
-     */
-    public static Object sample(String classPath, String className) throws Exception {
-        return sample(getClass(classPath, className));
-    }
-
-    /**
-     * Return a sample object of the supplied type, which may be common Java types such as String, Integer and array
-     * types, or a POJO class. The POJO class may or may not contain getter and setter methods.
-     *
-     * @param type the template type out of which the sample object is created
-     */
-    public static <T> Object sample(Class<T> type) {
-        Class typeKey = type == int.class ? Integer.class
-                : type == long.class ? Long.class
-                : type == float.class ? Float.class
-                : type == double.class ? Double.class
-                : type == boolean.class ? Boolean.class
-                : type == Object.class ? String.class
-                : type;
-        RandomGenerator randomGenerator = RandomGenerators.TYPE_GENERATOR_MAP.get(typeKey);
-        if (randomGenerator != null) {
-            return randomGenerator.generate();
-        }
-
-        if (type.isArray()) {
-            Object array = Array.newInstance(type.getComponentType(), 2);
-            Object val = sample(type.getComponentType());
-            Array.set(array, 0, val);
-            Array.set(array, 1, val);
-            return array;
-        }
-
-        try {
-            T obj = type.newInstance();
-            Field[] fields = type.getDeclaredFields();
-            for (Field field : fields) {
-                field.setAccessible(true);
-                Object value;
-                switch (field.getType().getSimpleName()) {
-                    case "List":
-                        String componentType = StringUtils.substringBetween(field.getGenericType().getTypeName(), "<", ">");
-                        Object val;
-                        if (componentType != null) {
-                            Class<?> componentTypeClass = type.getClassLoader().loadClass(componentType);
-                            val = sample(componentTypeClass);
-                        } else {
-                            val = sample(String.class);
-                        }
-                        value = new ArrayList<>(Arrays.asList(val, val));
-                        break;
-                    case "Map":
-                        String componentTypes = StringUtils.substringBetween(field.getGenericType().getTypeName(), "<", ">");
-                        Map map = new HashMap();
-                        Class<?> keyType, valueType;
-                        if (componentTypes != null) {
-                            String[] types = StringUtils.splitAndTrim(componentTypes, ",", SplitRegex.DROPPED);
-                            keyType = type.getClassLoader().loadClass(types[0]);
-                            valueType = type.getClassLoader().loadClass(types[1]);
-                        } else {
-                            keyType = String.class;
-                            valueType = String.class;
-                        }
-                        map.put(sample(keyType), sample(valueType));
-                        value = map;
-                        break;
-                    default:
-                        value = sample(field.getType());
-                }
-
-                field.set(obj, value);
-            }
-            return obj;
-        } catch (Exception e) {
-            LOG.error(e);
-            return null;
-        }
-    }
-
-    public static <T> List<T> sampleList(Class<T> type, int size) {
-        List<T> list = new ArrayList<>();
-        for (int i = 0; i < size; i++) {
-            list.add(type.cast(sample(type)));
-        }
-        return list;
-    }
-
-    public static Class getClass(String classPath, String className) throws Exception {
-        File file = new File(classPath);
-        URL url = file.toURI().toURL();
-        URL[] urls = new URL[]{url};
-        ClassLoader cl = new URLClassLoader(urls);
-        return cl.loadClass(className);
-    }
-
-    public static List<Class> getClasses(List<String> classPaths, List<String> packages) throws Exception {
-        List<Class> classes = new ArrayList<>();
-        List<URL> urls = new ArrayList<>();
-        for (int i = 0; i < classPaths.size(); i++) {
-            urls.add(new File(classPaths.get(i)).toURI().toURL());
-        }
-        ClassLoader cl = new URLClassLoader(urls.toArray(new URL[0]));
-        for (String classPath : classPaths) {
-            for (String p : packages) {
-                File dir = new File(classPath + "/" + p.replace(".", "/"));
-                File[] files = dir.listFiles();
-                if (files != null && files.length > 0) {
-                    for (File file : files) {
-                        if (file.isFile()) {
-                            String className = p + "." + StringUtils.substringBefore(file.getName(), ".class");
-                            classes.add(cl.loadClass(className));
-                        }
-                    }
-                }
-            }
-        }
-        return classes;
-    }
-
-    /**
      * Print information of the given table names
      *
      * @param tables
@@ -1790,7 +1667,7 @@ public class Coder {
 
     public static List<String> getServletPaths(List<String> classPaths, List<String> packages) throws Exception {
         List<String> paths = new ArrayList<>();
-        List<Class> classes = getClasses(classPaths, packages);
+        List<Class> classes = ReflectionUtils.getClasses(classPaths, packages);
         for (Class cls : classes) {
             if (cls.isAnnotationPresent(Controller.class) || cls.isAnnotationPresent(RestController.class)) {
                 Method[] methods = cls.getDeclaredMethods();

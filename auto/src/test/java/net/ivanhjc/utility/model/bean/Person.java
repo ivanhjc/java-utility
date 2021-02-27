@@ -1,7 +1,5 @@
 package net.ivanhjc.utility.model.bean;
 
-import java.util.Optional;
-
 /**
  * @author Ivan Huang on 2018/5/25 11:10.
  */

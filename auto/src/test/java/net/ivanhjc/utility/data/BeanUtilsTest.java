@@ -1,31 +1,17 @@
 package net.ivanhjc.utility.data;
 
-import com.google.gson.*;
-import net.ivanhjc.utility.auto.Coder;
+import net.ivanhjc.utility.auto.enums.RandomGenerators;
 import net.ivanhjc.utility.model.User;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Test;
 
-import java.util.Date;
-
 public class BeanUtilsTest {
+    private static final Logger LOG = LogManager.getLogger();
 
     @Test
-    public void getNullProperties() throws Exception {
-        Object sample = Coder.sample(User.class);
-        StringBuilder result = BeanUtils.getNullProperties("name,age,test", sample);
-        System.out.println(result);
-    }
-
-    @Test
-    public void test() throws Exception {
-        Object sample = Coder.sample("/home/ivanhjc/Projects/java-utility/data/target/test-classes", "net.ivanhjc.utility.data.model.Person");
-        Gson gson = new GsonBuilder()
-                .registerTypeAdapter(Date.class, (JsonDeserializer<Date>) (json, typeOfT, context) -> new Date(json.getAsJsonPrimitive().getAsLong()))
-                .registerTypeAdapter(Date.class, (JsonSerializer<Date>) (date, type, jsonSerializationContext) -> new JsonPrimitive(date.getTime()))
-                .create();
-        String json = gson.toJson(sample);
-        System.out.println("sample1: \n" + json);
-        Object sample2 = gson.fromJson(json, sample.getClass());
-        System.out.println("sample2: \n" + gson.toJson(sample2));
+    public void getNullProperties() {
+        StringBuilder result = BeanUtils.getNullProperties("name,age,test", RandomGenerators.generate(User.class));
+        LOG.info(result);
     }
 }

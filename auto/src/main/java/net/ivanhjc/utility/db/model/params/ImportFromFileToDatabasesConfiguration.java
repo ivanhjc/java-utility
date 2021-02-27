@@ -14,7 +14,7 @@ public class ImportFromFileToDatabasesConfiguration {
      * The target tables to import to. They may be in different connections and schemas, and should supposedly have the
      * same definition. Currently supported database types: MySQL.
      */
-    private DBTableLocator[] targets;
+    private TableInfo[] targets;
 
     /**
      * The fields of the database to import to. If fields isn't specified (null) then the first row in the source file
@@ -50,11 +50,11 @@ public class ImportFromFileToDatabasesConfiguration {
         return this;
     }
 
-    public DBTableLocator[] getTargets() {
+    public TableInfo[] getTargets() {
         return targets;
     }
 
-    public ImportFromFileToDatabasesConfiguration setTargets(DBTableLocator[] targets) {
+    public ImportFromFileToDatabasesConfiguration setTargets(TableInfo[] targets) {
         this.targets = targets;
         return this;
     }
@@ -69,8 +69,8 @@ public class ImportFromFileToDatabasesConfiguration {
     public ImportFromFileToDatabasesConfiguration setTargets(String targets) {
         this.targets = Arrays.stream(targets.split(",")).map(target -> {
             String[] temp = target.split("\\.");
-            return new DBTableLocator(temp[0], temp[1], temp[2]);
-        }).toArray(DBTableLocator[]::new);
+            return new TableInfo(temp[0], temp[1], temp[2]);
+        }).toArray(TableInfo[]::new);
         return this;
     }
 

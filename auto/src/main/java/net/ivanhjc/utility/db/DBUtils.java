@@ -6,6 +6,7 @@ import net.ivanhjc.utility.auto.RandomGenerator;
 import net.ivanhjc.utility.auto.enums.SQLDataTypes;
 import net.ivanhjc.utility.data.StringUtils;
 import net.ivanhjc.utility.db.model.params.ConnectionConfiguration;
+import net.ivanhjc.utility.db.model.params.TableInfo;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,6 +15,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toMap;
@@ -155,14 +157,13 @@ public class DBUtils {
     /**
      * Return a formatted printing representation of a table
      *
-     * @param connection The connection to use
-     * @param schema     The schema to use
-     * @param tableName  The table to use
+     * @param tableInfo Parameters used to locate a table
      * @return The formatted string
      * @throws SQLException
      */
-    public static String queryColumns(Connection connection, String schema, String tableName) throws SQLException {
-        try (PreparedStatement ps = connection.prepareStatement("SHOW FULL COLUMNS FROM " + schema + "." + tableName)) {
+    public static String queryColumns(TableInfo tableInfo) throws SQLException {
+        try (PreparedStatement ps = getConnection(tableInfo.getConnection())
+                .prepareStatement("SHOW FULL COLUMNS FROM " + tableInfo.getSchema() + "." + tableInfo.getTable())) {
             return StringUtils.formatTable(ps.executeQuery());
         }
     }
@@ -194,18 +195,14 @@ public class DBUtils {
      * Create a property-column mapping map with object properties as keys and their corresponding database columns as
      * values using the specified type and the {@code SHOW FULL COLUMNS ...} query statement.
      *
-     * @param connection The connection to use
-     * @param schema     The schema to use
-     * @param table      The table to map
-     * @param prefix     If the columns have a prefix it should be specified
-     * @param type       The Class object of the type of the objects to create
-     * @param <T>        The type of the objects to create
+     * @param tableInfo Parameters used to locate a table
+     * @param type      The Class object of the type of the objects to create
+     * @param <T>       The type of the objects to create
      * @return The result map
      * @throws SQLException
      */
-    public <T> Map<String, String> getResultMap(Connection connection, String schema, String table, String prefix,
-                                                Class<T> type) throws SQLException {
-        List<ColumnInfo> columns = getColumns(connection, schema, table, prefix);
+    public <T> Map<String, String> getResultMap(TableInfo tableInfo, Class<T> type) throws SQLException {
+        List<ColumnInfo> columns = getColumns(tableInfo);
         return Arrays.stream(type.getDeclaredFields()).collect(toMap(Field::getName, field -> columns.stream()
                 .filter(col -> Stream.of(col.getName(), col.getVarName()).anyMatch(name ->
                         name.equalsIgnoreCase(field.getName()))).limit(1).findFirst().map(ColumnInfo::getName).get()));
@@ -219,7 +216,7 @@ public class DBUtils {
      * @param resultMap A property-column mapping map with object properties as keys and their corresponding database
      *                  columns as values
      * @param <T>       the specified type
-     * @return
+     * @return the list of objects
      * @throws SQLException if a database access error occurs or this method is called on a closed connection
      * @throws IllegalAccessException if the class or its nullary constructor is not accessible
      * @throws InstantiationException if this Class represents an abstract class, an interface, an array class, a
@@ -242,15 +239,22 @@ public class DBUtils {
         return objects;
     }
 
-    public List<ColumnInfo> getColumns(Connection connection, String schema, String tableName, String prefix)
-            throws SQLException {
+    /**
+     * Generate a list of {@link ColumnInfo} objects from the columns in a table
+     *
+     * @param tableInfo parameters used to locate a table
+     * @return the list of columns
+     * @throws SQLException if the SQL execution was with error
+     */
+    public List<ColumnInfo> getColumns(TableInfo tableInfo) throws SQLException {
+        Connection connection = getConnection(tableInfo.getConnection());
         List<ColumnInfo> columns = new ArrayList<>();
         try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM information_schema.COLUMNS " +
-                "WHERE TABLE_SCHEMA = '" + schema + "' AND TABLE_NAME = '" + tableName + "'")) {
+                "WHERE TABLE_SCHEMA = '" + tableInfo.getSchema() + "' AND TABLE_NAME = '" + tableInfo.getTable() + "'")) {
             ResultSet rs = ps.executeQuery();
             if (null != rs) {
                 if (!rs.isBeforeFirst()) {
-                    throw new RuntimeException(String.format("Table \"%s\" not found", tableName));
+                    throw new RuntimeException(String.format("Table \"%s\" not found", tableInfo.getTable()));
                 }
 
                 while (rs.next()) {
@@ -261,7 +265,7 @@ public class DBUtils {
                     column.setCharacterMaximumLength(rs.getLong("CHARACTER_MAXIMUM_LENGTH"));
                     column.setKey(rs.getString("COLUMN_KEY"));
                     column.setComment(rs.getString("COLUMN_COMMENT"));
-                    column.setVarName(toVarName(column.getName(), prefix));
+                    column.setVarName(toVarName(column.getName(), tableInfo.getPrefix()));
                     column.setJavaType(SQLDataTypes.valueOf(column.getType().toUpperCase()).JAVA_TYPE);
                     column.setVarType(column.getJavaType().getSimpleName());
                     columns.add(column);
@@ -300,7 +304,9 @@ public class DBUtils {
 
     /**
      * Generate a list of objects of the given POJO class type with each field assigned with a random value regarding
-     * the field's database column properties such as data type, maximum character length, etc.
+     * the field's database column properties such as data type, maximum character length, etc. To generate a list of
+     * objects without regard to the database properties use
+     * {@link net.ivanhjc.utility.auto.enums.RandomGenerators#generate(Class, int)}
      *
      * @param type    the POJO class type
      * @param size    number of objects to generate
@@ -308,7 +314,7 @@ public class DBUtils {
      * @param <T>     type parameter
      * @return the generated list
      */
-    public <T> List<T> sampleList(Class<T> type, int size, List<ColumnInfo> columns) throws IllegalAccessException, InstantiationException {
+    public <T> List<T> generateList(Class<T> type, int size, List<ColumnInfo> columns) throws IllegalAccessException, InstantiationException {
         Map<String, RandomGenerator> generators = columns.stream().collect(toMap(ColumnInfo::getVarName, ColumnInfo::getRandomGenerator));
         Field[] fields = Arrays.stream(type.getDeclaredFields()).filter(field -> {
             boolean matchColumn = generators.get(field.getName()) != null;
@@ -326,5 +332,40 @@ public class DBUtils {
             list.add(obj);
         }
         return list;
+    }
+
+    /**
+     * Generate random data in a database table based on the properties of each column
+     *
+     * @param table   table info
+     * @param columns Columns used to generate the INSERT statement, and you can use this parameter to control the
+     *                generated value for each column. If it's null then by default all columns of the table will be
+     *                used and each of them will have values randomly generated according their type, length, etc. See
+     *                {@link ColumnInfo#getRandomGenerator()} for full default behaviors.
+     * @param rows    how many rows to generate
+     */
+    public void generateData(TableInfo table, List<ColumnInfo> columns, int rows) throws SQLException {
+        Connection connection = getConnection(table.getConnection());
+        if (columns == null) {
+            columns = getColumns(table);
+        }
+        StringBuilder sqlBuilder = new StringBuilder("INSERT INTO ").append(table.getSchema()).append(".")
+                .append(table.getTable()).append(" (")
+                .append(columns.stream().map(ColumnInfo::getName).collect(Collectors.joining(","))).append(") VALUES \n");
+        for (int i = 0; i < rows; i++) {
+            sqlBuilder.append("  (");
+            for (ColumnInfo col : columns) {
+                sqlBuilder.append(col.randomSQLValue()).append(",");
+            }
+            sqlBuilder.deleteCharAt(sqlBuilder.length() - 1).append("),\n");
+        }
+
+        String sql = sqlBuilder.delete(sqlBuilder.length() - 2, sqlBuilder.length()).toString();
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            LOG.debug(sql);
+            throw e;
+        }
     }
 }

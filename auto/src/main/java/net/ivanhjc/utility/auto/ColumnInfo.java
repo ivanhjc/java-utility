@@ -4,24 +4,64 @@ import net.ivanhjc.utility.auto.enums.CustomColumnType;
 import net.ivanhjc.utility.auto.enums.SQLDataTypes;
 import net.ivanhjc.utility.auto.enums.MyBatisToken;
 import net.ivanhjc.utility.auto.enums.RandomGenerators;
+import net.ivanhjc.utility.data.EscapeTypes;
 import net.ivanhjc.utility.data.ListUtils;
 import net.ivanhjc.utility.data.StringUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.text.RandomStringGenerator;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Objects;
 
+/**
+ * Properties of a database column
+ */
 public class ColumnInfo {
+    /**
+     * Column name
+     */
     private String name;
+    /**
+     * Column type
+     */
     private String type;
-    private Long characterMaximumLength;
+    /**
+     * If it's nullable
+     */
     private Boolean isNullable;
+    /**
+     * Maximum allowed characters if the column is of varchar type
+     */
+    private Long characterMaximumLength;
+    /**
+     * The constraint key of the column. May be null.
+     */
     private String key;
+    /**
+     * The comment of the column. May be null.
+     */
     private String comment;
-    private String varName; //the variable name as used in Java
-    private String varType; //the variable type as used in Java
+    /**
+     * The variable name of the column used in Java
+     */
+    private String varName;
+    /**
+     * The variable type of the column used in Java
+     */
+    private String varType;
+    /**
+     * The Java type of this column
+     */
     private Class javaType;
+    /**
+     * A generator for generating a proper random value for this column according to its properties such as type,
+     * nullable, length, etc.
+     */
     private RandomGenerator randomGenerator;
+    /**
+     * Whether this column contains characters of multiple languages
+     */
+    private boolean isMultiLang;
 
     public String getName() {
         return name;
@@ -47,12 +87,16 @@ public class ColumnInfo {
         this.characterMaximumLength = characterMaximumLength;
     }
 
-    public Boolean isNullable() {
+    public Boolean getNullable() {
         return isNullable;
     }
 
     public void setNullable(Boolean nullable) {
         isNullable = nullable;
+    }
+
+    public Boolean isNullable() {
+        return isNullable;
     }
 
     public String getKey() {
@@ -176,30 +220,52 @@ public class ColumnInfo {
     }
 
     public RandomGenerator getRandomGenerator() {
-        if (randomGenerator == null) {
-            randomGenerator = () -> {
-                boolean generate = !isNullable || Math.random() > 0.2;
-                if (generate) {
-                    if (javaType == String.class) {
-                        RandomStringGenerator generator;
-                        if (comment.contains("multi-lang")) {
-                            generator = RandomGenerators.RANDOM_STRING_ALPHA_NUMERAL_AND_OTHER_SPECIFIED_IN_FILE_GENERATOR;
-                        } else {
-                            generator = new RandomStringGenerator.Builder()
-                                    .withinRange(new char[]{'0', '9'}, new char[]{'A', 'z'})
-                                    .build();
-                        }
-                        return generator.generate(1, characterMaximumLength.intValue());
-                    }
-                    return RandomGenerators.TYPE_GENERATOR_MAP.get(javaType).generate();
-                }
-                return null;
-            };
+        if (randomGenerator != null) {
+            return randomGenerator;
         }
-        return randomGenerator;
+
+        return randomGenerator = () -> {
+            boolean generate = !isNullable || Math.random() > 0.2;
+            if (generate) {
+                if (javaType == String.class) {
+                    RandomStringGenerator generator;
+                    if (isMultiLang) {
+                        generator = RandomGenerators.RANDOM_STRING_SELECT_FROM_FILE_GENERATOR;
+                    } else {
+                        generator = new RandomStringGenerator.Builder()
+                                .withinRange(new char[]{'0', '9'}, new char[]{'A', 'z'})
+                                .build();
+                    }
+                    return generator.generate(1, characterMaximumLength.intValue());
+                }
+                return RandomGenerators.TYPE_GENERATOR_MAP.get(javaType).generate();
+            }
+            return null;
+        };
     }
 
     public void setRandomGenerator(RandomGenerator randomGenerator) {
         this.randomGenerator = randomGenerator;
+    }
+
+    public boolean isMultiLang() {
+        return isMultiLang;
+    }
+
+    public void setMultiLang(boolean multiLang) {
+        isMultiLang = multiLang;
+    }
+
+    private SimpleDateFormat sqlDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+    public String randomSQLValue() {
+        Object value = getRandomGenerator().generate();
+        if (value instanceof String) {
+            return "'" + EscapeTypes.SQL.escape((String) value) + "'";
+        } else if (value instanceof Date) {
+            return "'" + sqlDateFormat.format((Date) value) + "'";
+        } else {
+            return String.valueOf(value);
+        }
     }
 }

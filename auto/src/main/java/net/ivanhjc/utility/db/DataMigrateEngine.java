@@ -4,7 +4,7 @@ import net.ivanhjc.utility.data.EscapeTypes;
 import net.ivanhjc.utility.data.SplitRegex;
 import net.ivanhjc.utility.data.StringUtils;
 import net.ivanhjc.utility.db.model.enums.FileType;
-import net.ivanhjc.utility.db.model.params.DBTableLocator;
+import net.ivanhjc.utility.db.model.params.TableInfo;
 import net.ivanhjc.utility.db.model.params.ImportFromFileToDatabasesConfiguration;
 import net.ivanhjc.utility.file.POIUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -87,7 +87,7 @@ public class DataMigrateEngine {
 
         String sql = generateImportSQL(sheet, fields, configuration.getStartRow(), configuration.getTargets()[0]);
         LOG.debug(sql);
-        for (DBTableLocator table : configuration.getTargets()) {
+        for (TableInfo table : configuration.getTargets()) {
             Connection connection = DBUtils.getConnection(table.getConnection());
             try (PreparedStatement ps = connection.prepareStatement("USE " + table.getSchema());
                  PreparedStatement ps2 = connection.prepareStatement(sql)) {
@@ -98,7 +98,7 @@ public class DataMigrateEngine {
         LOG.info("Import done!");
     }
 
-    private String generateImportSQL(Sheet sheet, List<String> fields, int startRow, DBTableLocator table)
+    private String generateImportSQL(Sheet sheet, List<String> fields, int startRow, TableInfo table)
             throws SQLException {
         Connection connection = DBUtils.getConnection(table.getConnection());
         Map<Integer, Map<String, Object>> fieldValueMap = new HashMap<>();

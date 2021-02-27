@@ -7,7 +7,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
-import java.nio.CharBuffer;
 import java.util.Arrays;
 
 public enum RandomStringCharacterPredicates implements CharacterPredicate {
@@ -31,7 +30,7 @@ public enum RandomStringCharacterPredicates implements CharacterPredicate {
     ONLY_SPECIFIED_IN_FILE {
         @Override
         public boolean test(int codePoint) {
-            return Arrays.binarySearch(UNICODE_PREDICATES, codePoint) >= 0;
+            return Arrays.binarySearch(UNICODE_PREDICATES, (char) codePoint) >= 0;
         }
     },
 
@@ -43,13 +42,12 @@ public enum RandomStringCharacterPredicates implements CharacterPredicate {
     };
 
     private static final Logger LOG = LogManager.getLogger();
-    private static final int[] UNICODE_PREDICATES;
+    public static final char[] UNICODE_PREDICATES;
 
     static {
-        int[] temp = new int[0];
+        char[] temp = new char[0];
         try {
-            temp = CharBuffer.wrap(IOUtils.toCharArray(RandomStringCharacterPredicates.class
-                    .getResourceAsStream("/unicode_predicates"))).chars().toArray();
+            temp = IOUtils.toCharArray(RandomStringCharacterPredicates.class.getResourceAsStream("/unicode_predicates"));
             Arrays.sort(temp);
         } catch (IOException e) {
             LOG.error(e.getMessage(), e);
