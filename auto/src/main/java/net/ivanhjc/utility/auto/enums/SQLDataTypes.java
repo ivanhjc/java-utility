@@ -1,7 +1,8 @@
 package net.ivanhjc.utility.auto.enums;
 
+import org.joda.time.DateTime;
+
 import java.math.BigDecimal;
-import java.util.Date;
 
 public enum SQLDataTypes {
     INT("INT", Integer.class, "42"),
@@ -13,8 +14,8 @@ public enum SQLDataTypes {
     CHAR("CHAR", String.class, "test"),
     TEXT("TEXT", String.class, "test"),
     LONGTEXT("LONGTEXT", String.class, "test"),
-    DATE("DATE", Date.class, "new Date()"),
-    DATETIME("DATETIME", Date.class, "new Date()"),
+    DATE("DATE", DateTime.class, "new Date()"),
+    DATETIME("DATETIME", DateTime.class, "new Date()"),
     BOOLEAN("BOOLEAN", Boolean.class, "false"),
     JSON("JSON", String.class, "test");
 

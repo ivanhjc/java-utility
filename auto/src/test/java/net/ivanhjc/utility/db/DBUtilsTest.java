@@ -138,7 +138,7 @@ public class DBUtilsTest {
     public void generateData() throws InterruptedException, SQLException {
         LOG.info("Start generating data...");
         long startTime = System.currentTimeMillis();
-        int rows = 1000000;
+        int rows = 10000000;
         int threadNum = 4;
         int threadRows = rows / threadNum;
         Thread[] threads = new Thread[threadNum];
@@ -156,12 +156,14 @@ public class DBUtilsTest {
                 try {
                     long time = System.currentTimeMillis();
                     LOG.info("Thread start");
+                    DBUtils dbUtils = new DBUtils();
+                    dbUtils.connect("db.json");
                     dbUtils.generateData(tableInfo, columns, threadRows);
                     LOG.info("Thread end. Time elapsed: {}ms", System.currentTimeMillis() - time);
-                    count.incrementAndGet();
-                } catch (SQLException e) {
+                } catch (Exception e) {
                     LOG.error(e, e);
                 }
+                count.incrementAndGet();
             });
         }
         Arrays.stream(threads).forEach(Thread::start);

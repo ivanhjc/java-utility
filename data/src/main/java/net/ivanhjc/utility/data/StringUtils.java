@@ -1,50 +1,15 @@
 package net.ivanhjc.utility.data;
 
-import com.google.gson.FieldNamingPolicy;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import org.apache.commons.lang3.CharUtils;
-
 import java.net.URL;
-import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.stream.Stream;
 
 /**
  * @author Ivan Huang on 2017/6/27
  */
 public class StringUtils extends org.apache.commons.lang3.StringUtils {
-
-    public static final Gson GSON_UPPER = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE).create();
-    public static final Gson GSON_NULL = new GsonBuilder().serializeNulls().create();
-    public static final Gson GSON_SNAKE = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
-
-    /**
-     * Converts a string to capitalized form with all other letters unchanged. A null or empty input returns as is.
-     *
-     * @param str the string to capitalize, may be null or empty, returns as is in these cases
-     * @see org.apache.commons.lang3.StringUtils#capitalize(String)
-     */
-    public static String capitalize(String str) {
-        return str == null || str.isEmpty() ? str
-                : str.length() == 1 ? str.toUpperCase()
-                : str.substring(0, 1).toUpperCase().concat(str.substring(1));
-    }
-
-    /**
-     * Converts a string to uncapitalized form with all other letters unchanged. A null or empty input returns as is.
-     *
-     * @param str the string to uncapitalize, may be null or empty, returns as is in these cases
-     * @see org.apache.commons.lang3.StringUtils#uncapitalize(String)
-     */
-    public static String uncapitalize(String str) {
-        return str == null || str.isEmpty() ? str
-                : str.length() == 1 ? str.toLowerCase()
-                : str.substring(0, 1).toLowerCase().concat(str.substring(1));
-    }
 
     /**
      * Convert a string to capitalized form with all other letters to lowercase, e.g. hello, hELlo -> Hello
@@ -357,7 +322,7 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
         StringBuilder builder = new StringBuilder();
         char[] chars = str.toCharArray();
         for (char ch : chars) {
-            builder.append("\\u").append(org.apache.commons.lang3.StringUtils.leftPad(Integer.toHexString((int) ch), 4, '0'));
+            builder.append("\\u").append(leftPad(Integer.toHexString(ch), 4, '0'));
         }
         return builder.toString();
     }

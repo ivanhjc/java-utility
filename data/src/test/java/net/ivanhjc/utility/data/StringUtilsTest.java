@@ -1,14 +1,15 @@
 package net.ivanhjc.utility.data;
 
+import com.google.gson.FieldNamingPolicy;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import net.ivanhjc.utility.model.TokenInfo;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.apache.commons.math3.util.MathUtils;
 import org.junit.Test;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -18,6 +19,9 @@ import java.util.List;
  * @author Ivan Huang on 2017/6/27
  */
 public class StringUtilsTest {
+    public static final Gson GSON_UPPER = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE).create();
+    public static final Gson GSON_NULL = new GsonBuilder().serializeNulls().create();
+    public static final Gson GSON_SNAKE = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
 
     private String format = "%-20s%-20s%s%n";
     private String pointer = "->";
@@ -190,9 +194,9 @@ public class StringUtilsTest {
                 "  \"session_secret\": \"dfac94a3489fe9fca7c3221cbf7525ff\"\n" +
                 "}";
         String token2 = "{\"refreshToken\":\"25.b55fe1d287227ca97aab219bb249b8ab.315360000.1798284651.282335-8574074\",\"expiresIn\":2592000,\"scope\":\"public wise_adapt\",\"sessionKey\":\"9mzdDZXu3dENdFZQurfg0Vz8slgSgvvOAUebNFzyzcpQ5EnbxbF+hfG9DQkpUVQdh4p6HbQcAiz5RmuBAja1JJGgIdJI\",\"accessToken\":\"24.6c5e1ff107f0e8bcef8c46d3424a0e78.2592000.1485516651.282335-8574074\",\"sessionSecret\":\"dfac94a3489fe9fca7c3221cbf7525ff\",\"expireDate\":\"Jul 1, 2018 2:01:25 PM\"}";
-        TokenInfo info = StringUtils.GSON_SNAKE.fromJson(token2, TokenInfo.class);
+        TokenInfo info = GSON_SNAKE.fromJson(token2, TokenInfo.class);
         info.setExpireDate(new Date(System.currentTimeMillis() + info.getExpiresIn() * 1000));
-        System.out.println(StringUtils.GSON_NULL.toJson(info));
+        System.out.println(GSON_NULL.toJson(info));
     }
 
     @Test
@@ -259,7 +263,7 @@ public class StringUtilsTest {
 
     @Test
     public void urlToMap() throws MalformedURLException {
-        System.out.println(StringUtils.GSON_NULL.toJson(StringUtils.urlToMap(new URL("http://test.com/find?id=1&name=ivan"))));
+        System.out.println(GSON_NULL.toJson(StringUtils.urlToMap(new URL("http://test.com/find?id=1&name=ivan"))));
     }
 
     @Test

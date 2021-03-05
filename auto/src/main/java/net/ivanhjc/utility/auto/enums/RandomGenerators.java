@@ -11,6 +11,7 @@ import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.text.RandomStringGenerator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.joda.time.DateTime;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -77,8 +78,8 @@ public enum RandomGenerators implements RandomGenerator {
 
     RANDOM_DATE {
         @Override
-        public Date generate() {
-            return new Date(RandomUtils.nextLong(0, new Date().getTime()));
+        public DateTime generate() {
+            return new DateTime(RandomUtils.nextLong(0, System.currentTimeMillis()));
         }
     };
 

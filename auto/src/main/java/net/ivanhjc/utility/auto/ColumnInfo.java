@@ -8,6 +8,9 @@ import net.ivanhjc.utility.data.EscapeTypes;
 import net.ivanhjc.utility.data.ListUtils;
 import net.ivanhjc.utility.data.StringUtils;
 import org.apache.commons.text.RandomStringGenerator;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -256,14 +259,14 @@ public class ColumnInfo {
         isMultiLang = multiLang;
     }
 
-    private SimpleDateFormat sqlDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
 
     public String randomSQLValue() {
         Object value = getRandomGenerator().generate();
         if (value instanceof String) {
             return "'" + EscapeTypes.SQL.escape((String) value) + "'";
-        } else if (value instanceof Date) {
-            return "'" + sqlDateFormat.format((Date) value) + "'";
+        } else if (value instanceof DateTime) {
+            return "'" + dateTimeFormatter.print((DateTime) value) + "'";
         } else {
             return String.valueOf(value);
         }

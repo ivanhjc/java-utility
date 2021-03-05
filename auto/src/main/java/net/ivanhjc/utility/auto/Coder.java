@@ -1,6 +1,5 @@
 package net.ivanhjc.utility.auto;
 
-
 import net.ivanhjc.utility.auto.enums.*;
 import net.ivanhjc.utility.data.ListUtils;
 import net.ivanhjc.utility.data.SplitRegex;
@@ -21,12 +20,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.sql.*;
 import java.util.Date;

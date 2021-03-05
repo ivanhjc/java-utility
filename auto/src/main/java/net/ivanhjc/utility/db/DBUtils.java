@@ -338,7 +338,7 @@ public class DBUtils {
      * Generate random data in a database table based on the properties of each column
      *
      * @param table   table info
-     * @param columns Columns used to generate the INSERT statement, and you can use this parameter to control the
+     * @param columns Columns used to generate the INSERT statement. You can use this parameter to control the
      *                generated value for each column. If it's null then by default all columns of the table will be
      *                used and each of them will have values randomly generated according their type, length, etc. See
      *                {@link ColumnInfo#getRandomGenerator()} for full default behaviors.
